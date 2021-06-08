@@ -35,3 +35,9 @@
 # Editors
 .idea/
 .vscode/
+
+# cmake-cache
+*/cmake-build-debug/
+*/cmake-build-release/
+
+
