@@ -76,7 +76,9 @@ namespace simple_matrix
         Matrix<double> Matrix<T>::QR_iteration() const;
         vector<double> Matrix<T>::eigenvalue() const;
         Matrix<double> Matrix<T>::eigenvector() const;
-        inline Matrix<double> Matrix<T>::Nullspace() const;
+        T Matrix<T>::determinant() const;
+        Matrix<T> Matrix<T>::reshape(int32_t row, int32_t col) const;
+        Matrix<T> Matrix<T>::slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
     };
 
     /**
@@ -386,6 +388,70 @@ namespace simple_matrix
             eigenvalues[j] = H.Access(j, j);
         }
         return eigenvalues;
+    }
+
+    template <typename T>
+    T Matrix<T>::determinant() const
+    {
+        if (this->column_size_ != this->row_size_)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+        }
+        uint64_t size_m = this->column_size_ * this->row_size_;
+        if (size_m == 1)
+        {
+            return this->Access(0, 0);
+        }
+        Matrix<T> submatrix(size_m - 1, size_m - 1, 0);
+        T ans(0);
+        for (uint32_t i = 0; i < size_m; ++i)
+        {
+            for (uint32_t j = 0; j < size_m - 1; ++j)
+            {
+                for (uint32_t k = 0; k < size_m - 1; ++k)
+                {
+                    submatrix.Access(j, k) = this->Access((((i > j) ? 0 : 1) + j), k + 1);
+                }
+            }
+            ans += ((i % 2) ? -1 : 1) * this->Access(i, 0) * determinant(submatrix);
+        }
+        return ans;
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::reshape(int32_t row, int32_t col) const
+    {
+        int32_t col_num = this->column_size_;
+        int32_t num = this->row_size_ * col_num;
+        if (row * col != num || num <= 0)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+            return this;
+        }
+        Matrix<T> res;
+        for (int i = 0; i < num; i++)
+        {
+            res.Access(i / col, i % col) = this->Access(i / col_num, i % col_num);
+        }
+        return Matrix<T>(std::move(res));
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const
+    {
+        if (row1 < 0 || row2 >= this->row_size_ || col1 < 0 || col2 >= this->column_size_ || row1 > row2 || col1 > col2)
+        {
+            return this;
+        }
+        Matrix<T> res(row2 - row1 + 1, col2 - col1 + 1);
+        for (int32_t i = row1; i < row2; i++)
+        {
+            for (int32_t j = col1; j < col2; j++)
+            {
+                res.Access(i - row1, j - col1) = this->Access(i, j);
+            }
+        }
+        return Matrix<T>(std::move(res));
     }
 
     /*!
