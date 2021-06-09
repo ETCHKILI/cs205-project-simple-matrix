@@ -76,6 +76,7 @@ namespace simple_matrix
         Matrix<double> Matrix<T>::QR_iteration() const;
         vector<double> Matrix<T>::eigenvalue() const;
         Matrix<double> Matrix<T>::eigenvector() const;
+        T Matrix<T>::trace() const;
         T Matrix<T>::determinant() const;
         Matrix<T> Matrix<T>::reshape(int32_t row, int32_t col) const;
         Matrix<T> Matrix<T>::slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
@@ -388,6 +389,21 @@ namespace simple_matrix
             eigenvalues[j] = H.Access(j, j);
         }
         return eigenvalues;
+    }
+
+    template <typename T>
+    T Matrix<T>::trace() const
+    {
+        T ans{0};
+        if (this->column_size_ != this->row_size_)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+        }
+        for (int32_t i = 0; i < this->rows(); ++i)
+        {
+            ans += this->Access(i, i);
+        }
+        return ans;
     }
 
     template <typename T>
