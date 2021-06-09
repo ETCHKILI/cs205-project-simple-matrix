@@ -18,6 +18,11 @@ namespace simple_matrix {
         BadAccessException(const std::string &arg);
     };
 
+    class ArgumentNotMatchException : public std::invalid_argument {
+    public:
+        ArgumentNotMatchException(const std::string &arg);
+    };
+
 }
 
 

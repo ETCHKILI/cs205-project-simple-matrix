@@ -4,6 +4,7 @@
 
 #include "simple_matrix.h"
 #include <iostream>
+#include <memory>
 
 int main() {
     using namespace simple_matrix;
@@ -28,5 +29,10 @@ int main() {
         std::cout << '\n';
     }
 
+    Matrix m1(3,3,3);
+    Matrix m2(3,3,3);
+    Matrix m3 = m1 * m2;
+    Matrix m4 = m1 + m2;
+    std::cout << m3 << m4;
 }
 
