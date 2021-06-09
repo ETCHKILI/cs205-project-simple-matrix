@@ -8,7 +8,8 @@
 int main() {
     using namespace simple_matrix;
 
-    Matrix<int> matrix(3, 4, 5);
+    Matrix matrix(3, 4, 5);
+    auto m = Matrix(1,2,3);
 
     std::cout << matrix.Access(2, 3) << '\n';
 

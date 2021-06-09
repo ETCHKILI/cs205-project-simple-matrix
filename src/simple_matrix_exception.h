@@ -12,6 +12,12 @@ namespace simple_matrix {
     public:
         BadSizeException(const std::string &arg);
     };
+
+    class BadAccessException : public std::out_of_range {
+    public:
+        BadAccessException(const std::string &arg);
+    };
+
 }
 
 
