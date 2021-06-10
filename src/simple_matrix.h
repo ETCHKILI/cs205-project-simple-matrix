@@ -37,6 +37,8 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include <functional>
+#include <cmath>
 
 namespace simple_matrix {
 
@@ -880,7 +882,7 @@ namespace simple_matrix {
     }
 
     template <typename T>
-    static Matrix<T> Matrix<T>::identity(uint64_t s, T t)
+    Matrix<T> Matrix<T>::identity(uint64_t s, T t)
     {
         Matrix<T> res(s, s);
         for (uint64_t i = 0; i < s; ++i)
