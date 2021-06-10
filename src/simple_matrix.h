@@ -29,6 +29,8 @@
 #include <cstdint>
 #include <iterator>
 #include <vector>
+#include <cmath>
+#include "simple_matrix_exception.h"
 using namespace std;
 
 namespace simple_matrix
@@ -69,17 +71,17 @@ namespace simple_matrix
         uint64_t getRowSize() const;
         uint64_t getColumnSize() const;
         static bool CheckSizeValid(uint64_t row_size, uint64_t column_size);
-        Matrix<T> Matrix<T>::identity(uint64_t s, T t);
+        static Matrix<T> identity(uint64_t s, T t);
         Matrix<double> Householder(uint64_t col, uint64_t ele) const;
-        Matrix<double> Matrix<T>::Hessenberg() const;
-        Matrix<double> Matrix<T>::Givens(uint64_t col, uint64_t begin, uint64_t end) const;
-        Matrix<double> Matrix<T>::QR_iteration() const;
-        vector<double> Matrix<T>::eigenvalue() const;
-        Matrix<double> Matrix<T>::eigenvector() const;
-        T Matrix<T>::trace() const;
-        T Matrix<T>::determinant() const;
-        Matrix<T> Matrix<T>::reshape(int32_t row, int32_t col) const;
-        Matrix<T> Matrix<T>::slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
+        Matrix<double> Hessenberg() const;
+        Matrix<double> Givens(uint64_t col, uint64_t begin, uint64_t end) const;
+        Matrix<double> QR_iteration() const;
+        vector<double> eigenvalue() const;
+        Matrix<double> eigenvector() const;
+        T trace() const;
+        T determinant() const;
+        Matrix<T> reshape(int32_t row, int32_t col) const;
+        Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
     };
 
     /**
@@ -199,7 +201,7 @@ namespace simple_matrix
         /// TODO handle this exception
         if (data_ == nullptr)
         {
-            throw BadAccessException("Matrix is not initialized or index out of range");
+            throw BadSizeException("Matrix is not initialized or index out of range");
         }
         for (int i = 0; i < row_size_; ++i)
         {
@@ -222,7 +224,7 @@ namespace simple_matrix
     {
         if (row > row_size_ - 1 || column > column_size_ - 1)
         {
-            throw BadAccessException("Index out of bounds");
+            throw BadSizeException("Index out of bounds");
         }
         return (*this)[row][column];
     }
@@ -278,7 +280,7 @@ namespace simple_matrix
     }
 
     template <typename T>
-    Matrix<T> Matrix<T>::identity(uint64_t s, T t)
+    static Matrix<T> Matrix<T>::identity(uint64_t s, T t)
     {
         Matrix<T> res(s, s);
         for (uint64_t i = 0; i < s; ++i)
