@@ -79,10 +79,10 @@ namespace simple_matrix {
         explicit Matrix(local_uint_t row_size, local_uint_t column_size, const T& initial_value);
         explicit Matrix(const std::vector<T>& v, SelectAs selectAs);
 
-        Matrix(Matrix<T>& that);
+        Matrix(const Matrix<T>& that);
         Matrix(Matrix<T>&& that) noexcept;
 
-        Matrix<T> &operator=(Matrix<T> &that);
+        Matrix<T> &operator=(const Matrix<T> &that);
         Matrix<T> &operator=(Matrix<T> &&that) noexcept;
 
         virtual ~Matrix();
@@ -92,10 +92,22 @@ namespace simple_matrix {
         local_uint_t getColumnSize() const;
         static bool CheckSizeValid(local_uint_t row_size, local_uint_t column_size);
 
-        [[nodiscard]] Matrix<T> operator+(Matrix<T> &that);
-        [[nodiscard]] Matrix<T> operator-(Matrix<T> &that);
-        [[nodiscard]] Matrix<T> operator*(Matrix<T> &that);
-        void operator *=(T k);
+        [[nodiscard]] Matrix<T> operator+(const Matrix<T> &that);
+        [[nodiscard]] Matrix<T> operator+(const T &k);
+        Matrix<T> &operator+=(const Matrix<T> &that);
+        Matrix<T> &operator+=(const T &k);
+        [[nodiscard]] Matrix<T> operator-(const Matrix<T> &that);
+        [[nodiscard]] Matrix<T> operator-(const T &k);
+        Matrix<T> &operator-=(const Matrix<T> &that);
+        Matrix<T> &operator-=(const T &k);
+        [[nodiscard]] Matrix<T> operator*(const Matrix<T> &that);
+        [[nodiscard]] Matrix<T> operator*(const T &k);
+        Matrix<T> &operator*=(const Matrix<T> &that);
+        Matrix<T> &operator*=(const T &k);
+        [[nodiscard]] Matrix<T> operator/(const Matrix<T> &that);
+        [[nodiscard]] Matrix<T> operator/(const T &k);
+        Matrix<T> &operator/=(const Matrix<T> &that);
+        Matrix<T> &operator/=(const T &k);
 
         T FindMin(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX, std::function<bool(const T&, const T&)> compare = [](const T&a, const T&b){return a < b;});
         T FindMax(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX, std::function<bool(const T&, const T&)> compare = [](const T&a, const T&b){return a > b;});
@@ -103,9 +115,7 @@ namespace simple_matrix {
         T Average(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX);
 
         Matrix <T> getRotate180();
-
         Matrix <T> subMatrix(uint64_t row_lo, uint64_t col_lo, uint64_t row_hi, uint64_t col_hi);
-
         Matrix <T> convolution(Matrix <T> &that);
     };
 
@@ -119,9 +129,7 @@ namespace simple_matrix {
      */
     template<typename T>
     Matrix<T>::Matrix() {
-        data_ = new T[1]();
-        row_size_ = 1;
-        column_size_ = 1;
+        Matrix(1,1);
     }
 
     /**
@@ -134,7 +142,7 @@ namespace simple_matrix {
     template<typename T>
     Matrix<T>::Matrix(local_uint_t row_size, local_uint_t column_size) {
         if ( !CheckSizeValid(row_size, column_size)) {
-            throw simple_matrix::BadSizeException("Size too large!");
+            throw simple_matrix::BadSizeException("Size invalid!");
         }
         data_ = new T[row_size * column_size]();
         column_size_ = column_size;
@@ -164,6 +172,40 @@ namespace simple_matrix {
         }
     }
 
+    template<typename T>
+    Matrix<T>::Matrix(const std::vector<T>& v, SelectAs selectAs) {
+        if (v.empty()) {
+            throw BadSizeException("Size zero error");
+        }
+        data_ = new T[v.size()];
+        if (selectAs == SelectAs::COLUMN) {
+            column_size_ = v.size();
+            row_size_ = 1;
+        } else {
+            column_size_ = 1;
+            row_size_ = v.size();
+        }
+    }
+
+    template<typename T>
+    Matrix<T>::Matrix(const Matrix<T> &that) {
+        data_ = new T[that.row_size_ * that.column_size_];
+        row_size_ = that.row_size_;
+        column_size_ = that.column_size_;
+        int n = row_size_ * column_size_;
+        for (int i = 0; i < n; ++i) {
+            data_[i] = that.data_[i];
+        }
+    }
+
+    template<typename T>
+    Matrix<T>::Matrix(Matrix<T> &&that) noexcept{
+        data_ = that.data_;
+        row_size_ = that.row_size_;
+        column_size_ = that.column_size_;
+        that.data_ = nullptr;
+    }
+
     /**
     *
     * @tparam T
@@ -177,6 +219,34 @@ namespace simple_matrix {
             delete []data_;
         }
     }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator=(const Matrix<T> &that) {
+        if (this != that) {
+            data_ = new T[that.row_size_ * that.column_size_];
+            row_size_ = that.row_size_;
+            column_size_ = that.column_size_;
+            int n = row_size_ * column_size_;
+            for (int i = 0; i < n; ++i) {
+                data_[i] = that.data_[i];
+            }
+        }
+        return *this;
+    }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator=(Matrix<T> &&that) noexcept{
+        if (this != that) {
+            data_ = that.data_;
+            row_size_ = that.row_size_;
+            column_size_ = that.column_size_;
+            that.data_ = nullptr;
+        }
+        return *this;
+    }
+
+
+
 
     /**
      * @protected by simple_matrix::Matrix
@@ -257,62 +327,96 @@ namespace simple_matrix {
         return column_size_;
     }
 
-    /**
-     * @protected by Matrix, you should only use this when
-     * you want to initialize the data of matrix IN YOUR DERIVED
-     * CLASS and have to set size for initializing matrix
-     *
-     * @tparam T
-     * @param rowSize
-     */
     template<typename T>
-    void Matrix<T>::setRowSize(local_uint_t rowSize) {
-        row_size_ = rowSize;
-    }
-
-    /**
-     * @protected by Matrix, you should only use this when
-     * you want to initialize the data of matrix IN YOUR DERIVED
-     * CLASS and have to set size for initializing matrix
-     *
-     * @tparam T
-     * @param columnSize
-     */
-    template<typename T>
-    void Matrix<T>::setColumnSize(local_uint_t columnSize) {
-        column_size_ = columnSize;
-    }
-
-    template<typename T>
-    Matrix<T> Matrix<T>::operator+(Matrix<T> &that) {
+    Matrix<T> Matrix<T>::operator+(const Matrix<T> &that) {
         if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
             throw ArgumentNotMatchException("Matrix size not match");
         }
         Matrix<T> result(this->row_size_, this->column_size_);
-        for (int i = 0; i < this->row_size_; ++i) {
-            for (int j = 0; j < this->column_size_; ++j) {
-                result.Access(i, j) = Access(i, j) + that.Access(i, j);
-            }
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            result.data_[i] = this->data_[i] + that.data_[i];
         }
         return result;
     }
 
     template<typename T>
-    Matrix<T> Matrix<T>::operator-(Matrix<T> &that) {
-        if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
-            throw ArgumentNotMatchException("Matrix size not match");
-        }
+    Matrix<T> Matrix<T>::operator+(const T &k) {
         Matrix<T> result(this->row_size_, this->column_size_);
-        for (int i = 0; i < this->row_size_; ++i) {
-            for (int j = 0; j < this->column_size_; ++j) {
-                result.Access(i, j) = Access(i, j) - that.Access(i, j);
-            }
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            result.data_[i] = this->data_[i] + k;
         }
         return result;
     }
 
     template<typename T>
-    Matrix<T> Matrix<T>::operator*(Matrix<T> &that) {
+    Matrix<T> &Matrix<T>::operator+=(const Matrix<T> &that) {
+        if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            this->data_[i] = this->data_[i] + that.data_[i];
+        }
+        return (*this);
+    }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator+=(const T &k) {
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            this->data_[i] = this->data_[i] + k;
+        }
+        return (*this);
+    }
+
+    template<typename T>
+    Matrix<T> Matrix<T>::operator-(const Matrix<T> &that) {
+        if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        Matrix<T> result(this->row_size_, this->column_size_);
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            result.data_[i] = this->data_[i] - that.data_[i];
+        }
+        return result;
+    }
+
+    template<typename T>
+    Matrix<T> Matrix<T>::operator-(const T &k) {
+        Matrix<T> result(this->row_size_, this->column_size_);
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            result.data_[i] = this->data_[i] - k;
+        }
+        return result;
+    }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator-=(const Matrix<T> &that) {
+        if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            this->data_[i] = this->data_[i] - that.data_[i];
+        }
+        return (*this);
+    }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator-=(const T &k) {
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            this->data_[i] = this->data_[i] - k;
+        }
+        return (*this);
+    }
+
+    template<typename T>
+    Matrix<T> Matrix<T>::operator*(const Matrix<T> &that) {
         if (this->column_size_ != that.row_size_ || this->row_size_ != that.column_size_) {
             throw ArgumentNotMatchException("Matrix size not match");
         }
@@ -320,9 +424,9 @@ namespace simple_matrix {
         Matrix<T> result(n, n);
         for (int i = 0; i < n; ++i) {
             for (int k = 0;k < this->column_size_; ++k) {
-                T temp = Access(i , k);
+                T temp = (*this)[i][k];
                 for (int j = 0; j < n; ++j) {
-                    result.Access(i, j) = result.Access(i, j) + temp * that.Access(k, j);
+                    result[i][j] = result[i][j] + temp * that[k][j];
                 }
             }
         }
@@ -330,76 +434,69 @@ namespace simple_matrix {
     }
 
     template<typename T>
-    void Matrix<T>::operator*=(T k) {
-        auto new_data = new T[row_size_ * column_size_];
-        int n = row_size_ * column_size_;
+    Matrix<T> Matrix<T>::operator*(const T &k) {
+        Matrix<T> result(this->row_size_, this->column_size_);
+        uint64_t n = this->row_size_ * this->column_size_;
         for (int i = 0; i < n; ++i) {
-            new_data[i] = data_[i] * k;
+            result.data_[i] = this->data_[i] * k;
         }
-        delete[] this->data_;
-        this->data_ = new_data;
+        return result;
     }
 
     template<typename T>
-    Matrix<T>::Matrix(const std::vector<T>& v, SelectAs selectAs) {
-        if (v.empty()) {
-            throw BadSizeException("Size zero error");
-        }
-        data_ = new T[v.size()];
-        if (selectAs == SelectAs::COLUMN) {
-            column_size_ = v.size();
-            row_size_ = 1;
-        } else {
-            column_size_ = 1;
-            row_size_ = v.size();
-        }
+    Matrix<T> &Matrix<T>::operator*=(const Matrix<T> &that) {
+        (*this) = (*this) * that;
+        return (*this);
     }
 
     template<typename T>
-    Matrix<T>::Matrix(Matrix<T> &that) {
-        data_ = new T[that.row_size_ * that.column_size_];
-        row_size_ = that.row_size_;
-        column_size_ = that.column_size_;
-        for (int i = 0; i < row_size_; ++i) {
-            for (int j = 0; j < column_size_; ++j) {
-                data_[i * column_size_ + j] = that.data_[i * column_size_ + j];
-            }
+    Matrix<T> &Matrix<T>::operator*=(const T &k) {
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            this->data_[i] = this->data_[i] * k;
         }
+        return (*this);
+    }
+
+    /**
+     * TODO after implement inverse
+     * @tparam T
+     * @param that
+     * @return
+     */
+    template<typename T>
+    Matrix<T> Matrix<T>::operator/(const Matrix<T> &that) {
+        return Matrix<T>(0, 0);
     }
 
     template<typename T>
-    Matrix<T>::Matrix(Matrix<T> &&that) noexcept{
-        data_ = that.data_;
-        row_size_ = that.row_size_;
-        column_size_ = that.column_size_;
-        that.data_ = nullptr;
+    Matrix<T> Matrix<T>::operator/(const T &k) {
+        Matrix<T> result(this->row_size_, this->column_size_);
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            result.data_[i] = this->data_[i] / k;
+        }
+        return result;
     }
 
     template<typename T>
-    Matrix<T> &Matrix<T>::operator=(Matrix<T> &that) {
-        if (this != that) {
-            data_ = new T[that.row_size_ * that.column_size_];
-            row_size_ = that.row_size_;
-            column_size_ = that.column_size_;
-            for (int i = 0; i < row_size_; ++i) {
-                for (int j = 0; j < column_size_; ++j) {
-                    data_[i * column_size_ + j] = that.data_[i * column_size_ + j];
-                }
-            }
-        }
-        return *this;
+    Matrix<T> &Matrix<T>::operator/=(const Matrix<T> &that) {
+        (*this) = (*this) / that;
+        return (*this);
     }
 
     template<typename T>
-    Matrix<T> &Matrix<T>::operator=(Matrix<T> &&that) noexcept{
-        if (this != that) {
-            data_ = that.data_;
-            row_size_ = that.row_size_;
-            column_size_ = that.column_size_;
-            that.data_ = nullptr;
+    Matrix<T> &Matrix<T>::operator/=(const T &k) {
+        uint64_t n = this->row_size_ * this->column_size_;
+        for (int i = 0; i < n; ++i) {
+            this->data_[i] = this->data_[i] / k;
         }
-        return *this;
+        return (*this);
     }
+
+
+
+
 
     template<typename T1, typename T2>
     [[nodiscard]] auto operator+(Matrix<T1> &a, Matrix<T2> &b) {
@@ -731,6 +828,34 @@ namespace simple_matrix {
     T Matrix<T>::Average(std::vector<int32_t> index, SelectAs selectAs) {
         return (Sum(index, selectAs) / (row_size_ * column_size_));
     }
+
+
+    /**
+    * @protected by Matrix, you should only use this when
+    * you want to initialize the data of matrix IN YOUR DERIVED
+    * CLASS and have to set size for initializing matrix
+    *
+    * @tparam T
+    * @param rowSize
+    */
+    template<typename T>
+    void Matrix<T>::setRowSize(local_uint_t rowSize) {
+        row_size_ = rowSize;
+    }
+
+    /**
+     * @protected by Matrix, you should only use this when
+     * you want to initialize the data of matrix IN YOUR DERIVED
+     * CLASS and have to set size for initializing matrix
+     *
+     * @tparam T
+     * @param columnSize
+     */
+    template<typename T>
+    void Matrix<T>::setColumnSize(local_uint_t columnSize) {
+        column_size_ = columnSize;
+    }
+
 
 
     /**
