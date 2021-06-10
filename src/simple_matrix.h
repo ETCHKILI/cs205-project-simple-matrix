@@ -73,7 +73,7 @@ namespace simple_matrix {
         void setColumnSize(local_uint_t columnSize);
 
     public:
-        T* operator[](int row);
+        T* operator[](int row) const;
 
         explicit Matrix(local_uint_t row_size, local_uint_t column_size);
         explicit Matrix(local_uint_t row_size, local_uint_t column_size, const T& initial_value);
@@ -88,8 +88,8 @@ namespace simple_matrix {
         virtual ~Matrix();
         virtual T &Access(local_uint_t row, local_uint_t column);
         virtual void SetValue(T val);
-        local_uint_t getRowSize() const;
-        local_uint_t getColumnSize() const;
+        [[nodiscard]] local_uint_t getRowSize() const;
+        [[nodiscard]] local_uint_t getColumnSize() const;
         static bool CheckSizeValid(local_uint_t row_size, local_uint_t column_size);
 
         [[nodiscard]] Matrix<T> operator+(const Matrix<T> &that);
@@ -246,8 +246,6 @@ namespace simple_matrix {
     }
 
 
-
-
     /**
      * @protected by simple_matrix::Matrix
      * @warning THIS IS PROTECTED. Use Access(int, int) to access the
@@ -258,7 +256,7 @@ namespace simple_matrix {
      * @return
      */
     template<typename T>
-    T *Matrix<T>::operator[](int row) {
+    T *Matrix<T>::operator[](int row) const{
         return data_ + row * column_size_;
     }
 
@@ -494,142 +492,6 @@ namespace simple_matrix {
         return (*this);
     }
 
-
-
-
-
-    template<typename T1, typename T2>
-    [[nodiscard]] auto operator+(Matrix<T1> &a, Matrix<T2> &b) {
-        using T3 = decltype(std::declval<T1>() + std::declval<T2>());
-        auto na = a.getRowSize();
-        auto ma = a.getColumnSize();
-        auto nb = b.getRowSize();
-        auto mb = b.getColumnSize();
-
-        if (na != nb || ma != mb) {
-            throw ArgumentNotMatchException("Matrix size not match");
-        }
-        Matrix<T3> c(na, ma);
-        for (int i = 0; i < na; ++i) {
-            for (int j = 0; j < ma; ++j) {
-                c.Access(i, j) = a.Access(i, j) + b.Access(i, j);
-            }
-        }
-        return c;
-    }
-
-    template<typename T1, typename T2>
-    [[nodiscard]] auto operator-(Matrix<T1> &a, Matrix<T2> &b) {
-        using T3 = decltype(std::declval<T1>() - std::declval<T2>());
-        auto na = a.getRowSize();
-        auto ma = a.getColumnSize();
-        auto nb = b.getRowSize();
-        auto mb = b.getColumnSize();
-
-        if (na != nb || ma != mb) {
-            throw ArgumentNotMatchException("Matrix size not match");
-        }
-        Matrix<T3> c(na, ma);
-        for (int i = 0; i < na; ++i) {
-            for (int j = 0; j < ma; ++j) {
-                c.Access(i, j) = a.Access(i, j) - b.Access(i, j);
-            }
-        }
-        return c;
-    }
-
-    template<typename T1, typename T2>
-    [[nodiscard]] auto operator*(Matrix<T1> &a, Matrix<T2> &b) {
-        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
-        auto na = a.getRowSize();
-        auto ma = a.getColumnSize();
-        auto nb = b.getRowSize();
-        auto mb = b.getColumnSize();
-
-        if (na != mb || ma != nb) {
-            throw ArgumentNotMatchException("Matrix size not match");
-        }
-        Matrix<T3> c(na, na);
-        for (int i = 0; i < na; ++i) {
-            for (int k = 0;k < ma; ++k) {
-                T1 temp = a.Access(i , k);
-                for (int j = 0; j < na; ++j) {
-                    c.Access(i, j) = c.Access(i, j) + temp * b.Access(k, j);
-                }
-            }
-        }
-        return c;
-    }
-
-    template<typename T1, typename T2>
-    [[nodiscard]] auto DotMultiply(Matrix<T1> &a, Matrix<T2> &b) {
-        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
-        auto na = a.getRowSize();
-        auto ma = a.getColumnSize();
-        auto nb = b.getRowSize();
-        auto mb = b.getColumnSize();
-
-        if (na != nb || ma != mb) {
-            throw ArgumentNotMatchException("Matrix size not match");
-        }
-        Matrix<T3> c(na, ma);
-        for (int i = 0; i < na; ++i) {
-            for (int j = 0; j < ma; ++j) {
-                c.Access(i, j) = a.Access(i, j) * b.Access(i, j);
-            }
-        }
-        return c;
-    }
-
-    template<typename T1, typename T2>
-    [[nodiscard]] auto operator*(Matrix<T1> &a, std::vector<T2> &b) {
-        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
-        if (a.getColumnSize() != b.size()) {
-            throw ArgumentNotMatchException("Matrix and Vector size not match");
-        }
-
-        Matrix<T3> c(a.getRowSize(), 1);
-
-        for (int i = 0; i < a.getRowSize(); ++i) {
-            for (int j = 0; j < a.getColumnSize(); ++j) {
-                c.Access(i, 1) = c.Access(i, 1) + a.Access(i, j) * b[j];
-            }
-        }
-        return c;
-    }
-
-    template<typename T1, typename T2>
-    [[nodiscard]] auto operator/(Matrix<T1> &a,const T2 &b) {
-        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
-        uint64_t n = a.getRowSize();
-        uint64_t m = a.getColumnSize();
-        Matrix<T3> c(n, m);
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < m; ++j) {
-                c[i][j] = a.Access(i, j) / b;
-            }
-        }
-    }
-
-    /**
-     * @deprecated Never use this and just take it
-     * as a function for testing
-     * @tparam T
-     * @param ostream
-     * @param matrix
-     * @return the reference of ostream itself
-     */
-    template<typename T>
-    auto &operator<<(std::ostream& ostream, Matrix<T>& matrix) {
-        for (int i = 0; i < matrix.getRowSize(); ++i) {
-            for (int j = 0; j < matrix.getColumnSize(); ++j) {
-                ostream << matrix.Access(i, j);
-            }
-            ostream << '\n';
-        }
-        return ostream;
-    }
-
     template<typename T>
     Matrix<T> Matrix<T>::convolution(Matrix<T> &that) {
         uint64_t new_row_size = this->row_size_ + that.row_size_ - 1;
@@ -829,6 +691,139 @@ namespace simple_matrix {
         return (Sum(index, selectAs) / (row_size_ * column_size_));
     }
 
+
+    ///@deprecated all below
+    template<typename T1, typename T2>
+    [[nodiscard]] auto operator+(Matrix<T1> &a, Matrix<T2> &b) {
+        using T3 = decltype(std::declval<T1>() + std::declval<T2>());
+        auto na = a.getRowSize();
+        auto ma = a.getColumnSize();
+        auto nb = b.getRowSize();
+        auto mb = b.getColumnSize();
+
+        if (na != nb || ma != mb) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        Matrix<T3> c(na, ma);
+        for (int i = 0; i < na; ++i) {
+            for (int j = 0; j < ma; ++j) {
+                c.Access(i, j) = a.Access(i, j) + b.Access(i, j);
+            }
+        }
+        return c;
+    }
+
+    template<typename T1, typename T2>
+    [[nodiscard]] auto operator-(Matrix<T1> &a, Matrix<T2> &b) {
+        using T3 = decltype(std::declval<T1>() - std::declval<T2>());
+        auto na = a.getRowSize();
+        auto ma = a.getColumnSize();
+        auto nb = b.getRowSize();
+        auto mb = b.getColumnSize();
+
+        if (na != nb || ma != mb) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        Matrix<T3> c(na, ma);
+        for (int i = 0; i < na; ++i) {
+            for (int j = 0; j < ma; ++j) {
+                c.Access(i, j) = a.Access(i, j) - b.Access(i, j);
+            }
+        }
+        return c;
+    }
+
+    template<typename T1, typename T2>
+    [[nodiscard]] auto operator*(Matrix<T1> &a, Matrix<T2> &b) {
+        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+        auto na = a.getRowSize();
+        auto ma = a.getColumnSize();
+        auto nb = b.getRowSize();
+        auto mb = b.getColumnSize();
+
+        if (na != mb || ma != nb) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        Matrix<T3> c(na, na);
+        for (int i = 0; i < na; ++i) {
+            for (int k = 0;k < ma; ++k) {
+                T1 temp = a.Access(i , k);
+                for (int j = 0; j < na; ++j) {
+                    c.Access(i, j) = c.Access(i, j) + temp * b.Access(k, j);
+                }
+            }
+        }
+        return c;
+    }
+
+    template<typename T1, typename T2>
+    [[nodiscard]] auto DotMultiply(Matrix<T1> &a, Matrix<T2> &b) {
+        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+        auto na = a.getRowSize();
+        auto ma = a.getColumnSize();
+        auto nb = b.getRowSize();
+        auto mb = b.getColumnSize();
+
+        if (na != nb || ma != mb) {
+            throw ArgumentNotMatchException("Matrix size not match");
+        }
+        Matrix<T3> c(na, ma);
+        for (int i = 0; i < na; ++i) {
+            for (int j = 0; j < ma; ++j) {
+                c.Access(i, j) = a.Access(i, j) * b.Access(i, j);
+            }
+        }
+        return c;
+    }
+
+    template<typename T1, typename T2>
+    [[nodiscard]] auto operator*(Matrix<T1> &a, std::vector<T2> &b) {
+        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+        if (a.getColumnSize() != b.size()) {
+            throw ArgumentNotMatchException("Matrix and Vector size not match");
+        }
+
+        Matrix<T3> c(a.getRowSize(), 1);
+
+        for (int i = 0; i < a.getRowSize(); ++i) {
+            for (int j = 0; j < a.getColumnSize(); ++j) {
+                c.Access(i, 1) = c.Access(i, 1) + a.Access(i, j) * b[j];
+            }
+        }
+        return c;
+    }
+
+    template<typename T1, typename T2>
+    [[nodiscard]] auto operator/(Matrix<T1> &a,const T2 &b) {
+        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+        uint64_t n = a.getRowSize();
+        uint64_t m = a.getColumnSize();
+        Matrix<T3> c(n, m);
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                c[i][j] = a.Access(i, j) / b;
+            }
+        }
+    }
+
+    /**
+     * @deprecated Never use this and just take it
+     * as a function for testing
+     * @tparam T
+     * @param ostream
+     * @param matrix
+     * @return the reference of ostream itself
+     */
+    template<typename T>
+    auto &operator<<(std::ostream& ostream, const Matrix<T>& matrix) {
+        for (int i = 0; i < matrix.getRowSize(); ++i) {
+            for (int j = 0; j < matrix.getColumnSize(); ++j) {
+                ostream << matrix[i][j];
+            }
+            ostream << '\n';
+        }
+        return ostream;
+    }
 
     /**
     * @protected by Matrix, you should only use this when

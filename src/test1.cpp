@@ -33,6 +33,6 @@ int main() {
     Matrix m2(3,3,3);
     Matrix m3 = m1 * m2;
     Matrix m4 = m1 + m2;
-    std::cout << m3 << m4;
+    std::cout << m1 * m2;
 }
 
