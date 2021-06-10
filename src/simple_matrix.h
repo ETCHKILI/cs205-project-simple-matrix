@@ -54,12 +54,14 @@ namespace simple_matrix {
     };
 
 
-/**
+    /**
      *
      * @class Matrix
      * @brief Base class in simple_matrix
      * @tparam T
      * @details Use one-dimension array to simulate a matrix
+     * store the data in continuous heap memory which make it fast
+     *
      */
     template<typename T>
     class Matrix {
@@ -126,7 +128,7 @@ namespace simple_matrix {
         [[nodiscard]] Matrix<double> Givens(uint64_t col, uint64_t begin, uint64_t end) const;
         [[nodiscard]] Matrix<double> QR_iteration() const;
         [[nodiscard]] std::vector<double> eigenvalue() const;
-        [[nodiscard]] Matrix<double> eigenvector() const;
+//        [[nodiscard]] Matrix<double> eigenvector() const;
         [[nodiscard]] T trace() const;
         [[nodiscard]] T determinant() const;
         [[nodiscard]] Matrix<T> reshape(int32_t row, int32_t col) const;
@@ -706,7 +708,6 @@ namespace simple_matrix {
     }
 
 
-    ///@deprecated all below
     template<typename T1, typename T2>
     [[nodiscard]] auto operator+(Matrix<T1> &a, Matrix<T2> &b) {
         using T3 = decltype(std::declval<T1>() + std::declval<T2>());
@@ -1069,30 +1070,6 @@ namespace simple_matrix {
         }
         return Matrix<T>(std::move(res));
     }
-
-    /**
-     * TODO complete it if we still have time :)
-     * @class SymmetricMatrix
-     * @brief Base class in simple_matrix
-     * @tparam T
-     * @details Use one-dimension array to simulate a matrix
-     *          Considering it is symmetric, save data[i][j] in the same space as data[j][i]
-     */
-    template<typename T>
-    class SymmetricMatrix : public Matrix<T> {
-    private:
-
-    public:
-        explicit SymmetricMatrix();
-
-        explicit SymmetricMatrix(local_uint_t side_length);
-
-        explicit SymmetricMatrix(local_uint_t side_length, T initial_value);
-
-        ~SymmetricMatrix();
-
-        static bool CheckSizeValid(local_uint_t side_length);
-    };
 
 }
 
