@@ -36,6 +36,9 @@
 #include <iterator>
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/eigen.hpp>
 #include <iostream>
 #include <functional>
 #include <cmath>
@@ -132,13 +135,37 @@ namespace simple_matrix {
         [[nodiscard]] Matrix<double> QR_iteration() const;
         [[nodiscard]] std::vector<double> eigenvalue() const;
 //        [[nodiscard]] Matrix<double> eigenvector() const;
+        std::vector<std::pair<T, std::vector<T>>> eigen();
         [[nodiscard]] T trace() const;
         [[nodiscard]] T determinant() const;
         [[nodiscard]] Matrix<T> reshape(int32_t row, int32_t col) const;
         [[nodiscard]] Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
 
         [[nodiscard]] Matrix<T> Conjugate(const std::function<T (const T &)>& conjugate) const;
+
+        void print();
+        explicit operator cv::Mat_<T>() {
+            cv::Mat_<T> mat(row_size_, column_size_);
+
+#pragma omp parallel for collapse(2)
+            for (int row = 0; row < row_size_; ++row) {
+                for (int col = 0; col < column_size_; ++col) {
+                    mat(row, col) = data_[row * column_size_ + col];
+                }
+            }
+            return mat;
+        }
     };
+
+    template<typename T>
+    void Matrix<T>::print() {
+        for (int i = 0; i < getRowSize(); ++i) {
+            for (int j = 0; j < getColumnSize(); ++j) {
+                std::cout << Access(i, j) << ' ';
+            }
+            std::cout << '\n';
+        }
+    }
 
     /**
      * @brief
@@ -1146,6 +1173,25 @@ namespace simple_matrix {
             return mat;
         }
 
+    }
+
+    template<typename T>
+    std::vector<std::pair<T, std::vector<T>>> Matrix<T>::eigen() {
+        auto mat = (cv::Mat_<T>)(*this);
+        cv::Mat_<T> valuesMat;
+        cv::Mat_<T> vectorsMat;
+
+        cv::eigen(mat, valuesMat, vectorsMat);
+
+        std::vector<std::pair<T, std::vector<T>>> result;
+        for (int i = 0; i < valuesMat.rows; ++i) {
+            std::vector<T> vec;
+            for (int j = 0; j < vectorsMat.cols; ++j) {
+                vec.push_back(vectorsMat[i][0]);
+            }
+            result.push_back(std::make_pair(valuesMat[i][0], vec));
+        }
+        return result;
     }
 }
 
