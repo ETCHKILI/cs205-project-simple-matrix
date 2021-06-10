@@ -37,6 +37,8 @@ void testres();
 
 void testsli();
 
+void testconv();
+
 template<typename T>
 void printMatrix(Matrix<T> &mat) {
     for (int i = 0; i < mat.getRowSize(); ++i) {
@@ -48,7 +50,7 @@ void printMatrix(Matrix<T> &mat) {
 }
 
 int main() {
-    testinv();
+    testconv();
     return 0;
 }
 
@@ -142,6 +144,28 @@ void testdot() {
     printMatrix(b);
     Matrix<int> c(2, 2);
     c = DotMultiply(a, b);
+    printMatrix(c);
+};
+
+void testconv() {
+    Matrix<double> a(2, 2);
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            a.Access(i, j) = i + j * 2.0 + 1;
+        }
+    }
+    printMatrix(a);
+
+    Matrix<double> b(2, 2);
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            b.Access(i, j) = i - j * 2.0 + 1;
+        }
+    }
+    printMatrix(b);
+
+    Matrix<double> c(2, 2);
+    c = a.convolution(b);
     printMatrix(c);
 };
 
