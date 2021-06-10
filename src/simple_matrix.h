@@ -45,6 +45,7 @@ namespace simple_matrix {
     static const constexpr int64_t kDefaultSideLength = 10;
     static const uint64_t kMaxAllocateSize = UINT64_MAX;
     static const int64_t kOSBits = sizeof (void *) * 8;
+    static const double eps = 1e-3;
 
     using local_uint_t = uint64_t;
 
@@ -117,6 +118,19 @@ namespace simple_matrix {
         Matrix <T> getRotate180();
         Matrix <T> subMatrix(uint64_t row_lo, uint64_t col_lo, uint64_t row_hi, uint64_t col_hi);
         Matrix <T> convolution(Matrix <T> &that);
+
+        Matrix<T> transpose() const;
+        static Matrix<T> identity(uint64_t s, T t);
+        Matrix<double> Householder(uint64_t col, uint64_t ele) const;
+        Matrix<double> Hessenberg() const;
+        Matrix<double> Givens(uint64_t col, uint64_t begin, uint64_t end) const;
+        Matrix<double> QR_iteration() const;
+        std::vector<double> eigenvalue() const;
+        Matrix<double> eigenvector() const;
+        T trace() const;
+        T determinant() const;
+        Matrix<T> reshape(int32_t row, int32_t col) const;
+        Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
     };
 
     /**
@@ -852,6 +866,209 @@ namespace simple_matrix {
     }
 
 
+
+    template<typename T>
+    Matrix<T> Matrix<T>::transpose() const {
+        Matrix<T> res(this->column_size_, this->row_size_);
+        for (uint64_t i = 0; i < this->row_size_; ++i) {
+            for (uint64_t j = 0; j < this->column_size_; ++j) {
+                res.Access(j,i)= this->Access(i,j);
+            }
+        }
+        return res;
+    }
+
+    template <typename T>
+    static Matrix<T> Matrix<T>::identity(uint64_t s, T t)
+    {
+        Matrix<T> res(s, s);
+        for (uint64_t i = 0; i < s; ++i)
+        {
+            res.Access(i, i) = t;
+        }
+        return res;
+    }
+
+    template <typename T>
+    Matrix<double> Matrix<T>::Householder(uint64_t col, uint64_t ele) const
+    {
+        double square = 0;
+        for (uint64_t i = ele - 1; i < row_size_ * column_size_; ++i)
+        {
+            square += pow(this->Access(i, col - 1), 2);
+        }
+        double mod = this->Access(ele - 1, col - 1) > 0 ? pow(square, 0.5) : -pow(square, 0.5);
+        double modulus = mod * (mod + this->Access(ele - 1, col - 1));
+        Matrix<double> U(this->row_size_,1);
+        for (int j = 0; j < this->row_size_; ++j)
+        {
+            if (j > ele - 1)
+            {
+                U.Access(j, 0) = this->Access(j, col - 1);
+            }
+            else
+            {
+                U.Access(j, 0) = 0;
+            }
+        }
+        U.Access(ele - 1, 0) = this->Access(ele - 1, col - 1) + mod;
+        return Matrix<double>::identity(this->row_size_, 1) - U * U.transpose() / modulus;
+    }
+
+    template <typename T>
+    Matrix<double> Matrix<T>::Hessenberg() const
+    {
+        if (this->column_size_ != this->row_size_)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+        }
+        Matrix<double> left_H = Matrix<double>::identity(this->row_size_, 1);
+        Matrix<double> right_H = Matrix<double>::identity(this->row_size_, 1);
+        Matrix<double> H = left_H * this * right_H;
+        for (int i = 1; i < this->row_size_ - 1; ++i)
+        {
+            if (abs(H.Access(i + 1, i - 1)) > eps)
+            {
+                left_H = left_H * H.Householder(i, i + 1);
+                right_H = H.Householder(i, i + 1) * right_H;
+                H = left_H * this * right_H;
+            }
+        }
+        return H;
+    }
+
+    template <typename T>
+    Matrix<double> Matrix<T>::Givens(uint64_t col, uint64_t begin, uint64_t end) const
+    {
+        Matrix<double> R = Matrix<double>::identity(this->row_size_, 1);
+        double r = pow(pow(this->Access(begin - 1, col - 1), 2) + pow(this->Access(end - 1, col - 1), 2), 0.5);
+        double c = 1;
+        double s = 0;
+        if (abs(r) > eps)
+        {
+            c = this->Access(begin - 1, col - 1) / r;
+            s = this->Access(end - 1, col - 1) / r;
+        }
+        R.Access(begin - 1, begin - 1) = c;
+        R.Access(begin - 1, end - 1) = s;
+        R.Access(end - 1, begin - 1) = -s;
+        R.Access(end - 1, end - 1) = c;
+        return R;
+    }
+
+    template <typename T>
+    Matrix<double> Matrix<T>::QR_iteration() const
+    {
+        Matrix<double> R = this->Hessenberg();
+        Matrix<double> Q = Matrix<double>::identity((this->row_size_) * (this->column_size_), 1);
+        for (uint64_t i = 1; i < (this->row_size_) * (this->column_size_); ++i)
+        {
+            Matrix<double> temp_R = R.Givens(i, i, i + 1);
+            R = temp_R * R;
+            Q = Q * temp_R.transpose();
+        }
+        return R * Q;
+    }
+
+    template <typename T>
+    std::vector<double> Matrix<T>::eigenvalue() const
+    {
+        if (this->column_size_ != this->row_size_)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+        }
+        std::vector<double> eigenvalues(this->row_size_);
+        static constexpr int32_t iter_times = 150;
+        Matrix<double> H = this->QR_iteration();
+        for (int i = 0; i < iter_times; ++i)
+        {
+            H = H.QR_iteration();
+        }
+        for (int j = 0; j < this->row_size_; ++j)
+        {
+            eigenvalues[j] = H.Access(j, j);
+        }
+        return eigenvalues;
+    }
+
+    template <typename T>
+    T Matrix<T>::trace() const
+    {
+        T ans{0};
+        if (this->column_size_ != this->row_size_)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+        }
+        for (int32_t i = 0; i < this->rows(); ++i)
+        {
+            ans += this->Access(i, i);
+        }
+        return ans;
+    }
+
+    template <typename T>
+    T Matrix<T>::determinant() const
+    {
+        if (this->column_size_ != this->row_size_)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+        }
+        uint64_t size_m = this->column_size_ * this->row_size_;
+        if (size_m == 1)
+        {
+            return this->Access(0, 0);
+        }
+        Matrix<T> submatrix(size_m - 1, size_m - 1, 0);
+        T ans(0);
+        for (uint32_t i = 0; i < size_m; ++i)
+        {
+            for (uint32_t j = 0; j < size_m - 1; ++j)
+            {
+                for (uint32_t k = 0; k < size_m - 1; ++k)
+                {
+                    submatrix.Access(j, k) = this->Access((((i > j) ? 0 : 1) + j), k + 1);
+                }
+            }
+            ans += ((i % 2) ? -1 : 1) * this->Access(i, 0) * determinant(submatrix);
+        }
+        return ans;
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::reshape(int32_t row, int32_t col) const
+    {
+        int32_t col_num = this->column_size_;
+        int32_t num = this->row_size_ * col_num;
+        if (row * col != num || num <= 0)
+        {
+            throw std::invalid_argument("The matrix needs to be square");
+            return this;
+        }
+        Matrix<T> res;
+        for (int i = 0; i < num; i++)
+        {
+            res.Access(i / col, i % col) = this->Access(i / col_num, i % col_num);
+        }
+        return Matrix<T>(std::move(res));
+    }
+
+    template <typename T>
+    Matrix<T> Matrix<T>::slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const
+    {
+        if (row1 < 0 || row2 >= this->row_size_ || col1 < 0 || col2 >= this->column_size_ || row1 > row2 || col1 > col2)
+        {
+            return this;
+        }
+        Matrix<T> res(row2 - row1 + 1, col2 - col1 + 1);
+        for (int32_t i = row1; i < row2; i++)
+        {
+            for (int32_t j = col1; j < col2; j++)
+            {
+                res.Access(i - row1, j - col1) = this->Access(i, j);
+            }
+        }
+        return Matrix<T>(std::move(res));
+    }
 
     /**
      * TODO complete it if we still have time :)
