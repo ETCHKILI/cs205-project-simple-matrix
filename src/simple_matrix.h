@@ -137,7 +137,7 @@ namespace simple_matrix {
         [[nodiscard]] Matrix<T> reshape(int32_t row, int32_t col) const;
         [[nodiscard]] Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
 
-        [[nodiscard]] Matrix<T> Conjugate(std::function<T (const T&)> conjugate) const;
+        [[nodiscard]] Matrix<T> Conjugate(const std::function<T (const T &)>& conjugate) const;
     };
 
     /**
@@ -838,7 +838,7 @@ namespace simple_matrix {
     auto &operator<<(std::ostream& ostream, const Matrix<T>& matrix) {
         for (int i = 0; i < matrix.getRowSize(); ++i) {
             for (int j = 0; j < matrix.getColumnSize(); ++j) {
-                ostream << matrix[i][j];
+                ostream << matrix[i][j] << ' ';
             }
             ostream << '\n';
         }
@@ -966,8 +966,8 @@ namespace simple_matrix {
     Matrix<double> Matrix<T>::QR_iteration() const
     {
         Matrix<double> R = this->Hessenberg();
-        Matrix<double> Q = Matrix<double>::identity((this->row_size_) * (this->column_size_), 1);
-        for (uint64_t i = 1; i < (this->row_size_) * (this->column_size_); ++i)
+        Matrix<double> Q = Matrix<double>::identity((this->row_size_), 1);
+        for (uint64_t i = 1; i < (this->row_size_); ++i)
         {
             Matrix<double> temp_R = R.Givens(i, i, i + 1);
             R = temp_R * R;
@@ -1077,7 +1077,7 @@ namespace simple_matrix {
     }
 
     template<typename T>
-    Matrix<T> Matrix<T>::Conjugate(std::function<T (const T&)> conjugate) const {
+    Matrix<T> Matrix<T>::Conjugate(const std::function<T ( const T &)>& conjugate) const {
         auto result = Matrix<T>(row_size_, column_size_);
         int n = row_size_ * column_size_;
         for (int i = 0; i < n; ++i) {
