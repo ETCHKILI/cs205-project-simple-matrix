@@ -138,8 +138,6 @@ namespace simple_matrix {
         [[nodiscard]] Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
 
         [[nodiscard]] Matrix<T> Conjugate(std::function<T (const T&)> conjugate) const;
-//        [[nodiscard]] static Matrix<T> CvMatToMatrix(const cv::Mat &mat);
-//        [[nodiscard]] static cv::Mat MatrixToCvMat(const Matrix<T> &matrix);
     };
 
     /**
