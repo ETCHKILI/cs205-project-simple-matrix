@@ -39,6 +39,7 @@
 #include <iostream>
 #include <functional>
 #include <cmath>
+#include <typeinfo>
 
 namespace simple_matrix {
 
@@ -135,6 +136,8 @@ namespace simple_matrix {
         [[nodiscard]] T determinant() const;
         [[nodiscard]] Matrix<T> reshape(int32_t row, int32_t col) const;
         [[nodiscard]] Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
+
+        [[nodiscard]] Matrix<T> Conjugate(std::function<T (const T&)> conjugate) const;
     };
 
     /**
@@ -1073,6 +1076,15 @@ namespace simple_matrix {
         return Matrix<T>(std::move(res));
     }
 
+    template<typename T>
+    Matrix<T> Matrix<T>::Conjugate(std::function<T (const T&)> conjugate) const {
+        auto result = Matrix<T>(row_size_, column_size_);
+        int n = row_size_ * column_size_;
+        for (int i = 0; i < n; ++i) {
+            result.data_[i] = conjugate(data_[i]);
+        }
+        return result;
+    }
 }
 
 #endif //CS205_PROJECT_SIMPLE_MATRIX_SIMPLE_MATRIX_H
