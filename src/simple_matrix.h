@@ -82,6 +82,7 @@ namespace simple_matrix
         [[nodiscard]] Matrix<T> operator-(Matrix<T> &that);
         [[nodiscard]] Matrix<T> operator*(Matrix<T> &that);
         void operator *=(T k);
+        Matrix<T> transpose() const;
         static Matrix<T> identity(uint64_t s, T t);
         Matrix<double> Householder(uint64_t col, uint64_t ele) const;
         Matrix<double> Hessenberg() const;
@@ -501,6 +502,17 @@ namespace simple_matrix
         return ostream;
     }
 
+    template<typename T>
+    Matrix<T> Matrix<T>::transpose() const {
+        Matrix<T> res(this->column_size_, this->row_size_);
+        for (uint64_t i = 0; i < this->row_size_; ++i) {
+            for (uint64_t j = 0; j < this->column_size_; ++j) {
+                res.Access(j,i)= this->Access(i,j);
+            }
+        }
+        return res;
+    }
+
     template <typename T>
     static Matrix<T> Matrix<T>::identity(uint64_t s, T t)
     {
@@ -522,8 +534,7 @@ namespace simple_matrix
         }
         double mod = this->Access(ele - 1, col - 1) > 0 ? pow(square, 0.5) : -pow(square, 0.5);
         double modulus = mod * (mod + this->Access(ele - 1, col - 1));
-        Matrix<double> U;
-        U.SetValue(1);
+        Matrix<double> U(this->row_size_,1);
         for (int j = 0; j < this->row_size_; ++j)
         {
             if (j > ele - 1)
