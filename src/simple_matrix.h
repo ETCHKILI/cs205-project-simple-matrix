@@ -138,6 +138,8 @@ namespace simple_matrix {
         [[nodiscard]] Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
 
         [[nodiscard]] Matrix<T> Conjugate(std::function<T (const T&)> conjugate) const;
+//        [[nodiscard]] static Matrix<T> CvMatToMatrix(const cv::Mat &mat);
+//        [[nodiscard]] static cv::Mat MatrixToCvMat(const Matrix<T> &matrix);
     };
 
     /**
@@ -243,7 +245,7 @@ namespace simple_matrix {
 
     template<typename T>
     Matrix<T> &Matrix<T>::operator=(const Matrix<T> &that) {
-        if (this != that) {
+        if (this != &that) {
             data_ = new T[that.row_size_ * that.column_size_];
             row_size_ = that.row_size_;
             column_size_ = that.column_size_;
@@ -257,7 +259,7 @@ namespace simple_matrix {
 
     template<typename T>
     Matrix<T> &Matrix<T>::operator=(Matrix<T> &&that) noexcept{
-        if (this != that) {
+        if (this != &that) {
             data_ = that.data_;
             row_size_ = that.row_size_;
             column_size_ = that.column_size_;
@@ -1084,6 +1086,68 @@ namespace simple_matrix {
             result.data_[i] = conjugate(data_[i]);
         }
         return result;
+    }
+
+    Matrix<double> CvMatToMatrix(const cv::Mat &mat) {
+        int32_t type = mat.type();
+        if (mat.channels() > 1) {
+            throw ArgumentNotMatchException("Channel not supported!");
+        }
+        if (mat.rows == 0 || mat.cols == 0) {
+            throw BadSizeException("Size exception");
+        }
+
+        Matrix<double> result(mat.rows, mat.cols);
+        for (int i = 0; i < mat.rows; ++i) {
+            for (int j = 0; j < mat.cols; ++j) {
+                result[i][j] = mat.at<int>(i, j);
+            }
+        }
+        return result;
+    }
+
+    template<typename T>
+    cv::Mat MatrixToCvMat(const Matrix<T> &matrix) {
+        using std::is_same_v;
+        int type = 7;
+        if (is_same_v<T, uint8_t>()) {
+            type = 0;
+        } else if (is_same_v<T, int8_t>()) {
+            type = 1;
+        } else if (is_same_v<T, uint16_t>()) {
+            type = 2;
+        } else if (is_same_v<T, int16_t>()) {
+            type = 3;
+        } else if (is_same_v<T, int32_t>()) {
+            type = 4;
+        } else if (is_same_v<T, float>()) {
+            type = 5;
+        } else if (is_same_v<T, double>()) {
+            type = 6;
+        }
+
+        if (type == 7) {
+            throw ArgumentNotMatchException("Type not supported");
+        }
+
+        if (type < 5) {
+            cv::Mat mat(matrix.getRowSize(), matrix.getColumnSize(), CV_32S);
+            for (int i = 0; i < matrix.getRowSize(); ++i) {
+                for (int j = 0; j < matrix.getColumnSize(); ++j) {
+                    mat.at<T>(i, j) = matrix[i][j];
+                }
+            }
+            return mat;
+        } else {
+            cv::Mat mat(matrix.getRowSize(), matrix.getColumnSize(), CV_64F);
+            for (int i = 0; i < matrix.getRowSize(); ++i) {
+                for (int j = 0; j < matrix.getColumnSize(); ++j) {
+                    mat.at<T>(i, j) = matrix[i][j];
+                }
+            }
+            return mat;
+        }
+
     }
 }
 
