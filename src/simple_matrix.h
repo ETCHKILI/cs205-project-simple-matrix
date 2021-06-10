@@ -119,18 +119,18 @@ namespace simple_matrix {
         Matrix <T> subMatrix(uint64_t row_lo, uint64_t col_lo, uint64_t row_hi, uint64_t col_hi);
         Matrix <T> convolution(Matrix <T> &that);
 
-        Matrix<T> transpose() const;
+        [[nodiscard]] Matrix<T> transpose() const;
         static Matrix<T> identity(uint64_t s, T t);
-        Matrix<double> Householder(uint64_t col, uint64_t ele) const;
-        Matrix<double> Hessenberg() const;
-        Matrix<double> Givens(uint64_t col, uint64_t begin, uint64_t end) const;
-        Matrix<double> QR_iteration() const;
-        std::vector<double> eigenvalue() const;
-        Matrix<double> eigenvector() const;
-        T trace() const;
-        T determinant() const;
-        Matrix<T> reshape(int32_t row, int32_t col) const;
-        Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
+        [[nodiscard]] Matrix<double> Householder(uint64_t col, uint64_t ele) const;
+        [[nodiscard]] Matrix<double> Hessenberg() const;
+        [[nodiscard]] Matrix<double> Givens(uint64_t col, uint64_t begin, uint64_t end) const;
+        [[nodiscard]] Matrix<double> QR_iteration() const;
+        [[nodiscard]] std::vector<double> eigenvalue() const;
+        [[nodiscard]] Matrix<double> eigenvector() const;
+        [[nodiscard]] T trace() const;
+        [[nodiscard]] T determinant() const;
+        [[nodiscard]] Matrix<T> reshape(int32_t row, int32_t col) const;
+        [[nodiscard]] Matrix<T> slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) const;
     };
 
     /**
