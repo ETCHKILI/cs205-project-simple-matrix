@@ -612,8 +612,8 @@ namespace simple_matrix {
                 index = std::vector<int32_t>();
                 index.push_back(0);
                 index.push_back(0);
-                index.push_back(row_size_ - 1);
-                index.push_back(column_size_ - 1);
+                index.push_back(row_size_);
+                index.push_back(column_size_);
             }
             res = data_[index[0] * column_size_ + index[1]];
             for (int i = index[0]; i < index[2]; ++i) {
@@ -653,8 +653,8 @@ namespace simple_matrix {
                 index = std::vector<int32_t>();
                 index.push_back(0);
                 index.push_back(0);
-                index.push_back(row_size_ - 1);
-                index.push_back(column_size_ - 1);
+                index.push_back(row_size_);
+                index.push_back(column_size_);
             }
             res = data_[index[0] * column_size_ + index[1]];
             for (int i = index[0]; i < index[2]; ++i) {
