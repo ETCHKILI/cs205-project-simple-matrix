@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <iterator>
 #include <vector>
+#include <opencv2/opencv.hpp>
 #include <iostream>
 
 namespace simple_matrix {
@@ -43,12 +44,12 @@ namespace simple_matrix {
     static const constexpr int64_t kDefaultColumnSize = 10;
     static const constexpr int64_t kDefaultSideLength = 10;
     static const uint64_t kMaxAllocateSize = UINT64_MAX;
-    static const int64_t kOSBits = sizeof(void *) * 8;
+    static const int64_t kOSBits = sizeof (void *) * 8;
 
     using local_uint_t = uint64_t;
 
     enum class SelectAs {
-        MATRIX, ROW, COLUMN
+        SUB_MATRIX, ROW, COLUMN
     };
 
 
@@ -62,58 +63,50 @@ namespace simple_matrix {
     template<typename T>
     class Matrix {
     private:
-        T *operator[](int row);
 
     protected:
         T *data_;
         local_uint_t row_size_;
         local_uint_t column_size_;
-
         explicit Matrix();
-
         void setRowSize(local_uint_t rowSize);
-
         void setColumnSize(local_uint_t columnSize);
 
     public:
+        T* operator[](int row);
+
         explicit Matrix(local_uint_t row_size, local_uint_t column_size);
+        explicit Matrix(local_uint_t row_size, local_uint_t column_size, const T& initial_value);
+        explicit Matrix(const std::vector<T>& v, SelectAs selectAs);
 
-        explicit Matrix(local_uint_t row_size, local_uint_t column_size, const T &initial_value);
+        Matrix(Matrix<T>& that);
+        Matrix(Matrix<T>&& that) noexcept;
 
-        explicit Matrix(const std::vector<T> &v, SelectAs selectAs);
-
-        Matrix(Matrix<T> &that);
-
-        Matrix(Matrix<T> &&that) noexcept;
+        Matrix<T> &operator=(Matrix<T> &that);
+        Matrix<T> &operator=(Matrix<T> &&that) noexcept;
 
         virtual ~Matrix();
-
         virtual T &Access(local_uint_t row, local_uint_t column);
-
         virtual void SetValue(T val);
-
         local_uint_t getRowSize() const;
-
         local_uint_t getColumnSize() const;
-
         static bool CheckSizeValid(local_uint_t row_size, local_uint_t column_size);
 
         [[nodiscard]] Matrix<T> operator+(Matrix<T> &that);
-
         [[nodiscard]] Matrix<T> operator-(Matrix<T> &that);
-
         [[nodiscard]] Matrix<T> operator*(Matrix<T> &that);
+        void operator *=(T k);
 
-        void operator*=(T k);
+        T FindMin(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX, std::function<bool(const T&, const T&)> compare = [](const T&a, const T&b){return a < b;});
+        T FindMax(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX, std::function<bool(const T&, const T&)> compare = [](const T&a, const T&b){return a > b;});
+        T Sum(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX);
+        T Average(std::vector<int32_t> index = std::vector<int32_t>(), SelectAs selectAs = SelectAs::SUB_MATRIX);
 
+        Matrix <T> getRotate180();
 
-        Matrix<T> getRotate180();
+        Matrix <T> subMatrix(uint64_t row_lo, uint64_t col_lo, uint64_t row_hi, uint64_t col_hi);
 
-        Matrix<T> subMatrix(uint64_t row_lo, uint64_t col_lo, uint64_t row_hi, uint64_t col_hi);
-
-        Matrix<T> convolution(Matrix<T> &that);
-
-        void print();
+        Matrix <T> convolution(Matrix <T> &that);
     };
 
     /**
@@ -140,7 +133,7 @@ namespace simple_matrix {
      */
     template<typename T>
     Matrix<T>::Matrix(local_uint_t row_size, local_uint_t column_size) {
-        if (!CheckSizeValid(row_size, column_size)) {
+        if ( !CheckSizeValid(row_size, column_size)) {
             throw simple_matrix::BadSizeException("Size too large!");
         }
         data_ = new T[row_size * column_size]();
@@ -157,8 +150,8 @@ namespace simple_matrix {
      * @param initial_value
      */
     template<typename T>
-    Matrix<T>::Matrix(local_uint_t row_size, local_uint_t column_size, const T &initial_value) {
-        if (!CheckSizeValid(row_size, column_size)) {
+    Matrix<T>::Matrix(local_uint_t row_size, local_uint_t column_size, const T& initial_value) {
+        if ( !CheckSizeValid(row_size, column_size)) {
             throw simple_matrix::BadSizeException("Size too large!");
         }
         data_ = new T[row_size * column_size]();
@@ -181,7 +174,7 @@ namespace simple_matrix {
     template<typename T>
     Matrix<T>::~Matrix() {
         if (data_ != nullptr) {
-            delete[]data_;
+            delete []data_;
         }
     }
 
@@ -208,8 +201,7 @@ namespace simple_matrix {
      */
     template<typename T>
     bool Matrix<T>::CheckSizeValid(local_uint_t row_size, local_uint_t column_size) {
-        return ((row_size <= kMaxAllocateSize / column_size) || (column_size <= kMaxAllocateSize / row_size)) &&
-               std::max(row_size, column_size) > 0;
+        return ((row_size <= kMaxAllocateSize / column_size) || (column_size <= kMaxAllocateSize / row_size)) && std::max(row_size, column_size) > 0;
     }
 
     /**
@@ -327,8 +319,8 @@ namespace simple_matrix {
         int n = this->row_size_;
         Matrix<T> result(n, n);
         for (int i = 0; i < n; ++i) {
-            for (int k = 0; k < this->column_size_; ++k) {
-                T temp = Access(i, k);
+            for (int k = 0;k < this->column_size_; ++k) {
+                T temp = Access(i , k);
                 for (int j = 0; j < n; ++j) {
                     result.Access(i, j) = result.Access(i, j) + temp * that.Access(k, j);
                 }
@@ -349,7 +341,7 @@ namespace simple_matrix {
     }
 
     template<typename T>
-    Matrix<T>::Matrix(const std::vector<T> &v, SelectAs selectAs) {
+    Matrix<T>::Matrix(const std::vector<T>& v, SelectAs selectAs) {
         if (v.empty()) {
             throw BadSizeException("Size zero error");
         }
@@ -376,11 +368,37 @@ namespace simple_matrix {
     }
 
     template<typename T>
-    Matrix<T>::Matrix(Matrix<T> &&that) noexcept {
+    Matrix<T>::Matrix(Matrix<T> &&that) noexcept{
         data_ = that.data_;
         row_size_ = that.row_size_;
         column_size_ = that.column_size_;
         that.data_ = nullptr;
+    }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator=(Matrix<T> &that) {
+        if (this != that) {
+            data_ = new T[that.row_size_ * that.column_size_];
+            row_size_ = that.row_size_;
+            column_size_ = that.column_size_;
+            for (int i = 0; i < row_size_; ++i) {
+                for (int j = 0; j < column_size_; ++j) {
+                    data_[i * column_size_ + j] = that.data_[i * column_size_ + j];
+                }
+            }
+        }
+        return *this;
+    }
+
+    template<typename T>
+    Matrix<T> &Matrix<T>::operator=(Matrix<T> &&that) noexcept{
+        if (this != that) {
+            data_ = that.data_;
+            row_size_ = that.row_size_;
+            column_size_ = that.column_size_;
+            that.data_ = nullptr;
+        }
+        return *this;
     }
 
     template<typename T1, typename T2>
@@ -436,8 +454,8 @@ namespace simple_matrix {
         }
         Matrix<T3> c(na, na);
         for (int i = 0; i < na; ++i) {
-            for (int k = 0; k < ma; ++k) {
-                T1 temp = a.Access(i, k);
+            for (int k = 0;k < ma; ++k) {
+                T1 temp = a.Access(i , k);
                 for (int j = 0; j < na; ++j) {
                     c.Access(i, j) = c.Access(i, j) + temp * b.Access(k, j);
                 }
@@ -483,6 +501,19 @@ namespace simple_matrix {
         return c;
     }
 
+    template<typename T1, typename T2>
+    [[nodiscard]] auto operator/(Matrix<T1> &a,const T2 &b) {
+        using T3 = decltype(std::declval<T1>() * std::declval<T2>());
+        uint64_t n = a.getRowSize();
+        uint64_t m = a.getColumnSize();
+        Matrix<T3> c(n, m);
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                c[i][j] = a.Access(i, j) / b;
+            }
+        }
+    }
+
     /**
      * @deprecated Never use this and just take it
      * as a function for testing
@@ -492,7 +523,7 @@ namespace simple_matrix {
      * @return the reference of ostream itself
      */
     template<typename T>
-    auto &operator<<(std::ostream &ostream, Matrix<T> &matrix) {
+    auto &operator<<(std::ostream& ostream, Matrix<T>& matrix) {
         for (int i = 0; i < matrix.getRowSize(); ++i) {
             for (int j = 0; j < matrix.getColumnSize(); ++j) {
                 ostream << matrix.Access(i, j);
@@ -574,14 +605,133 @@ namespace simple_matrix {
     }
 
     template<typename T>
-    void Matrix<T>::print() {
-        for (int i = 0; i < getRowSize(); ++i) {
-            for (int j = 0; j < getColumnSize(); ++j) {
-                std::cout << Access(i, j) << ' ';
+    T Matrix<T>::FindMin(std::vector<int32_t> index, SelectAs selectAs, std::function<bool(const T&, const T&)> compare) {
+        T res;
+        if (selectAs == SelectAs::COLUMN) {
+            res = data_[index[0]];
+            for (int i = 0; i < index.size(); ++i) {
+                for (int j = 0; j < row_size_; ++j) {
+                    if (compare(data_[j * column_size_ + index[i]], res)) {
+                        res = data_[j * column_size_ + index[i]];
+                    }
+                }
             }
-            std::cout << '\n';
+        } else if (selectAs == SelectAs::ROW) {
+            res = data_[index[0] * column_size_];
+            for (int i = 0; i < index.size(); ++i) {
+                for (int j = 0; j < column_size_; ++j) {
+                    if (compare(data_[index[i] * column_size_ + j], res)) {
+                        res = data_[index[i] * column_size_ + j];
+                    }
+                }
+            }
+        } else {
+            if (index.empty()) {
+                index = std::vector<int32_t>();
+                index.push_back(0);
+                index.push_back(0);
+                index.push_back(row_size_ - 1);
+                index.push_back(column_size_ - 1);
+            }
+            res = data_[index[0] * column_size_ + index[1]];
+            for (int i = index[0]; i < index[2]; ++i) {
+                for (int j = index[1]; j < index[3]; ++j) {
+                    if (compare(data_[i * column_size_ + j], res)){
+                        res = data_[i * column_size_ + j];
+                    }
+                }
+            }
         }
+        return res;
     }
+
+    template<typename T>
+    T Matrix<T>::FindMax(std::vector<int32_t> index, SelectAs selectAs, std::function<bool(const T&, const T&)> compare) {
+        T res;
+        if (selectAs == SelectAs::COLUMN) {
+            res = data_[index[0]];
+            for (int i = 0; i < index.size(); ++i) {
+                for (int j = 0; j < row_size_; ++j) {
+                    if (compare(data_[j * column_size_ + index[i]], res)) {
+                        res = data_[j * column_size_ + index[i]];
+                    }
+                }
+            }
+        } else if (selectAs == SelectAs::ROW) {
+            res = data_[index[0] * column_size_];
+            for (int i = 0; i < index.size(); ++i) {
+                for (int j = 0; j < column_size_; ++j) {
+                    if (compare(data_[index[i] * column_size_ + j], res)) {
+                        res = data_[index[i] * column_size_ + j];
+                    }
+                }
+            }
+        } else {
+            if (index.empty()) {
+                index = std::vector<int32_t>();
+                index.push_back(0);
+                index.push_back(0);
+                index.push_back(row_size_ - 1);
+                index.push_back(column_size_ - 1);
+            }
+            res = data_[index[0] * column_size_ + index[1]];
+            for (int i = index[0]; i < index[2]; ++i) {
+                for (int j = index[1]; j < index[3]; ++j) {
+                    if (compare(data_[i * column_size_ + j], res)){
+                        res = data_[i * column_size_ + j];
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    template<typename T>
+    T Matrix<T>::Sum(std::vector<int32_t> index, SelectAs selectAs) {
+        T res;
+        if (selectAs == SelectAs::COLUMN) {
+            res = data_[index[0]];
+            for (int i = 0; i < index.size(); ++i) {
+                for (int j = 0; j < row_size_; ++j) {
+                    if (i != 0 || j != 0) {
+                        res = res + data_[j * column_size_ + index[i]];
+                    }
+                }
+            }
+        } else if (selectAs == SelectAs::ROW) {
+            res = data_[index[0] * column_size_];
+            for (int i = 0; i < index.size(); ++i) {
+                for (int j = 0; j < column_size_; ++j) {
+                    if (i != 0 || j != 0) {
+                        res = res + data_[index[i] * column_size_ + j];
+                    }
+                }
+            }
+        } else {
+            if (index.empty()) {
+                index = std::vector<int32_t>();
+                index.push_back(0);
+                index.push_back(0);
+                index.push_back(row_size_ - 1);
+                index.push_back(column_size_ - 1);
+            }
+            res = data_[index[0] * column_size_ + index[1]];
+            for (int i = index[0]; i < index[2]; ++i) {
+                for (int j = index[1]; j < index[3]; ++j) {
+                    if (i != index[0] || j != index[1]) {
+                        res = res + data_[i * column_size_ + j];
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    template<typename T>
+    T Matrix<T>::Average(std::vector<int32_t> index, SelectAs selectAs) {
+        return (Sum(index, selectAs) / (row_size_ * column_size_));
+    }
+
 
     /**
      * TODO complete it if we still have time :)
@@ -607,41 +757,6 @@ namespace simple_matrix {
         static bool CheckSizeValid(local_uint_t side_length);
     };
 
-    template<typename T>
-    SymmetricMatrix<T>::SymmetricMatrix() {
-        this->data_ = new T[kDefaultSideLength * (kDefaultSideLength - 1) / 2];
-        this->setColumnSize(kDefaultSideLength);
-        this->setRowSize(kDefaultSideLength);
-    }
-
-    template<typename T>
-    SymmetricMatrix<T>::SymmetricMatrix(local_uint_t side_length) {
-        if (!CheckSizeValid(side_length)) {
-            throw simple_matrix::BadSizeException("Size too large");
-        }
-        this->data_ = new T[side_length * (side_length - 1) / 2];
-        this->setColumnSize(side_length);
-        this->setRowSize(side_length);
-    }
-
-    template<typename T>
-    SymmetricMatrix<T>::SymmetricMatrix(local_uint_t side_length, T initial_value) {
-        if (!CheckSizeValid(side_length)) {
-            throw simple_matrix::BadSizeException("Size too large");
-        }
-        this->data_ = new T[side_length * (side_length - 1) / 2]{initial_value};
-        this->setColumnSize(side_length);
-        this->setRowSize(side_length);
-    }
-
-    template<typename T>
-    bool SymmetricMatrix<T>::CheckSizeValid(local_uint_t side_length) {
-        return side_length <= kMaxAllocateSize / side_length && side_length > 0;
-    }
-
-    template<typename T>
-    SymmetricMatrix<T>::~SymmetricMatrix() {
-    }
 }
 
 #endif //CS205_PROJECT_SIMPLE_MATRIX_SIMPLE_MATRIX_H
