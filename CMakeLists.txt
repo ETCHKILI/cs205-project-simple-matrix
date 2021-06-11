@@ -3,8 +3,10 @@ project(cs205_project_simple_matrix)
 
 set(CMAKE_CXX_STANDARD 17)
 
+#specify your opencv path
 set(OpenCV_DIR "E:/Environment/opencv")
 
+#specify your eigen path
 include_directories("E:\\Environment\\eigen3")
 
 find_package(OpenCV REQUIRED)

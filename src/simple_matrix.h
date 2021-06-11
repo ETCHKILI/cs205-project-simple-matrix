@@ -23,9 +23,14 @@
 */
 
 /**
+ * @file simple_matrix.cpp
+ * @author Guo Yubin, Shen Zhilong, Fan Leilong
+ * @date 2021-06-11
  * @Github https://github.com/ETCHKILI/cs205-project-simple-matrix
  * @Organization SUSTech
- * @Author Guo Yubin, Shen Zhilong, Fan Leilong
+ * @version 0.1.0
+ * @attention Should specify the OpenCV(compiled by mingw) path and Eigen path
+ * in the CMakeLists.txt. For detail please see CmakeLists.txt
  */
 #ifndef CS205_PROJECT_SIMPLE_MATRIX_SIMPLE_MATRIX_H
 #define CS205_PROJECT_SIMPLE_MATRIX_SIMPLE_MATRIX_H
@@ -44,6 +49,10 @@
 #include <cmath>
 #include <typeinfo>
 
+/**
+ * @brief The namespace of the simple_matrix project, including one
+ * matrix class and three exception class
+ */
 namespace simple_matrix {
 
     static const constexpr int64_t kDefaultRowSize = 10;
@@ -53,43 +62,43 @@ namespace simple_matrix {
     static const int64_t kOSBits = sizeof (void *) * 8;
     static const double eps = 1e-3;
 
-    using local_uint_t = uint64_t;
-
+    /**
+     * @brief Enum class that specify the direction of the vector(s):
+     * Row vector, Column vector or a Sub-matrix
+     */
     enum class SelectAs {
         SUB_MATRIX, ROW, COLUMN
     };
 
 
     /**
-     *
      * @class Matrix
      * @brief Base class in simple_matrix
      * @tparam T
      * @details Use one-dimension array to simulate a matrix
-     * store the data in continuous heap memory which make it fast
-     *
+     * store the data in continuous heap memory which make it efficient
      */
     template<typename T>
     class Matrix {
     private:
 
     protected:
+        /**
+         * @brief the pointer to the data array
+         */
         T *data_;
-        local_uint_t row_size_;
-        local_uint_t column_size_;
+
+        uint64_t row_size_; ///< the row size
+        uint64_t column_size_; ///< the column size
 
         explicit Matrix();
-
-        void setRowSize(local_uint_t rowSize);
-
-        void setColumnSize(local_uint_t columnSize);
 
     public:
         T *operator[](int row) const;
 
-        explicit Matrix(local_uint_t row_size, local_uint_t column_size);
+        explicit Matrix(uint64_t row_size, uint64_t column_size);
 
-        explicit Matrix(local_uint_t row_size, local_uint_t column_size, const T &initial_value);
+        explicit Matrix(uint64_t row_size, uint64_t column_size, const T &initial_value);
 
         explicit Matrix(const std::vector<T> &v, SelectAs selectAs);
 
@@ -105,15 +114,15 @@ namespace simple_matrix {
 
         virtual ~Matrix();
 
-        virtual T &Access(local_uint_t row, local_uint_t column);
+        virtual T &Access(uint64_t row, uint64_t column);
 
         virtual void SetValue(T val);
 
-        [[nodiscard]] local_uint_t getRowSize() const;
+        [[nodiscard]] uint64_t getRowSize() const;
 
-        [[nodiscard]] local_uint_t getColumnSize() const;
+        [[nodiscard]] uint64_t getColumnSize() const;
 
-        static bool CheckSizeValid(local_uint_t row_size, local_uint_t column_size);
+        static bool CheckSizeValid(uint64_t row_size, uint64_t column_size);
 
         [[nodiscard]] Matrix<T> operator+(const Matrix<T> &that);
 
@@ -179,7 +188,6 @@ namespace simple_matrix {
 
         [[nodiscard]] Matrix<T> inverse();
 
-//        [[nodiscard]] Matrix<double> eigenvector() const;
         std::vector<std::pair<T, std::vector<T>>> eigen();
 
         [[nodiscard]] T trace();
@@ -194,12 +202,9 @@ namespace simple_matrix {
     };
 
     /**
-     * @brief
-     * @details
+     * @protected because it is not meaningful to create a 1-row-1-column
+     * matrix. If it is needed, you can specify the size.
      * @tparam T
-     * @param
-     * @attention
-     * @warning IT IS PROTECTED!!! Should only be used when you want to initialize the data_ as nullptr
      */
     template<typename T>
     Matrix<T>::Matrix() {
@@ -207,14 +212,13 @@ namespace simple_matrix {
     }
 
     /**
-     * Constructor that do not initialize the data
-     *
+     * @brief Constructor that initialize the element with default constructor
      * @tparam T
      * @param row_size
      * @param column_size
      */
     template<typename T>
-    Matrix<T>::Matrix(local_uint_t row_size, local_uint_t column_size) {
+    Matrix<T>::Matrix(uint64_t row_size, uint64_t column_size) {
         if (!CheckSizeValid(row_size, column_size)) {
             throw simple_matrix::BadSizeException("Size invalid!");
         }
@@ -224,15 +228,14 @@ namespace simple_matrix {
     }
 
     /*!
-     * Constructor that initialize the data
-     *
+     * @brief Constructor that initialize the data
      * @tparam T
      * @param row_size
      * @param column_size
      * @param initial_value
      */
     template<typename T>
-    Matrix<T>::Matrix(local_uint_t row_size, local_uint_t column_size, const T &initial_value) {
+    Matrix<T>::Matrix(uint64_t row_size, uint64_t column_size, const T &initial_value) {
         if (!CheckSizeValid(row_size, column_size)) {
             throw simple_matrix::BadSizeException("Size too large!");
         }
@@ -246,6 +249,12 @@ namespace simple_matrix {
         }
     }
 
+    /**
+     * @brief Constructor by a vector
+     * @tparam T
+     * @param v
+     * @param selectAs
+     */
     template<typename T>
     Matrix<T>::Matrix(const std::vector<T> &v, SelectAs selectAs) {
         if (v.empty()) {
@@ -261,6 +270,11 @@ namespace simple_matrix {
         }
     }
 
+    /**
+     * @brief Copy constructor
+     * @tparam T
+     * @param that
+     */
     template<typename T>
     Matrix<T>::Matrix(const Matrix<T> &that) {
         data_ = new T[that.row_size_ * that.column_size_];
@@ -272,6 +286,11 @@ namespace simple_matrix {
         }
     }
 
+    /**
+     * @brief Move constructor
+     * @tparam T
+     * @param that
+     */
     template<typename T>
     Matrix<T>::Matrix(Matrix<T> &&that) noexcept {
         data_ = that.data_;
@@ -281,7 +300,7 @@ namespace simple_matrix {
     }
 
     /**
-    *
+    * @brief Destructor : delete []data
     * @tparam T
     * @param row_size
     * @param column_size
@@ -294,6 +313,12 @@ namespace simple_matrix {
         }
     }
 
+    /**
+     * @brief Copy assignment
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator=(const Matrix<T> &that) {
         if (this != &that) {
@@ -308,6 +333,12 @@ namespace simple_matrix {
         return *this;
     }
 
+    /**
+     * @brief Move assignment
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator=(Matrix<T> &&that) noexcept {
         if (this != &that) {
@@ -321,10 +352,9 @@ namespace simple_matrix {
 
 
     /**
-     * @protected by simple_matrix::Matrix
-     * @warning THIS IS PROTECTED. Use Access(int, int) to access the
-     * data unless you are writing a derived class and want to access
-     * the data directly.
+     * @brief The operator[] which can access the data
+     * @detail return a pointer equal to (data_ + row * column_size_)
+     * @example use like this: {@code matrix[i][j]} to access the data in row i and column j
      * @tparam T
      * @param row
      * @return
@@ -335,26 +365,25 @@ namespace simple_matrix {
     }
 
     /**
-     *
+     * @brief Check if the size is valid for constructing a matrix
      * @tparam T
      * @param row_size
      * @param column_size
-     * @return
+     * @return True if the size is valid for constructing a matrix. False if not
      */
     template<typename T>
-    bool Matrix<T>::CheckSizeValid(local_uint_t row_size, local_uint_t column_size) {
+    bool Matrix<T>::CheckSizeValid(uint64_t row_size, uint64_t column_size) {
         return ((row_size <= kMaxAllocateSize / column_size) || (column_size <= kMaxAllocateSize / row_size)) &&
                std::max(row_size, column_size) > 0;
     }
 
     /**
-     *
+     * @brief Set the value for the whole matrix
      * @tparam T
      * @param val
      */
     template<typename T>
     void Matrix<T>::SetValue(T val) {
-        /// TODO handle this exception
         if (data_ == nullptr) {
             throw BadAccessException("Matrix is not initialized or index out of range");
         }
@@ -366,14 +395,14 @@ namespace simple_matrix {
     }
 
     /**
-     *
+     * @brief The way that can be overloaded by derived class to access the data (get or change the value)
      * @tparam T
      * @param row
      * @param column
      * @return
      */
     template<typename T>
-    T &Matrix<T>::Access(local_uint_t row, local_uint_t column) {
+    T &Matrix<T>::Access(uint64_t row, uint64_t column) {
         if (row > row_size_ - 1 || column > column_size_ - 1) {
             throw BadAccessException("Index out of bounds");
         }
@@ -381,25 +410,31 @@ namespace simple_matrix {
     }
 
     /**
-     *
+     * @brief the public way to get the row_size of the matrix
      * @tparam T
      * @return
      */
     template<typename T>
-    local_uint_t Matrix<T>::getRowSize() const {
+    uint64_t Matrix<T>::getRowSize() const {
         return row_size_;
     }
 
     /**
-     *
+     * @brief the public way to get the column_size of the matrix
      * @tparam T
      * @return
      */
     template<typename T>
-    local_uint_t Matrix<T>::getColumnSize() const {
+    uint64_t Matrix<T>::getColumnSize() const {
         return column_size_;
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that: another matrix
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator+(const Matrix<T> &that) {
         if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
@@ -413,6 +448,12 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload, every element of the matrix should be operate with the value
+     * @tparam T
+     * @param k: a value
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator+(const T &k) {
         Matrix<T> result(this->row_size_, this->column_size_);
@@ -423,6 +464,12 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator+=(const Matrix<T> &that) {
         if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
@@ -435,6 +482,12 @@ namespace simple_matrix {
         return (*this);
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param k
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator+=(const T &k) {
         uint64_t n = this->row_size_ * this->column_size_;
@@ -444,6 +497,12 @@ namespace simple_matrix {
         return (*this);
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that: another matrix
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator-(const Matrix<T> &that) {
         if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
@@ -457,6 +516,12 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload, every element of the matrix should be operate with the value
+     * @tparam T
+     * @param k: a value
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator-(const T &k) {
         Matrix<T> result(this->row_size_, this->column_size_);
@@ -467,6 +532,12 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator-=(const Matrix<T> &that) {
         if (this->column_size_ != that.column_size_ || this->row_size_ != that.row_size_) {
@@ -479,6 +550,12 @@ namespace simple_matrix {
         return (*this);
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param k
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator-=(const T &k) {
         uint64_t n = this->row_size_ * this->column_size_;
@@ -488,6 +565,13 @@ namespace simple_matrix {
         return (*this);
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that: another matrix
+     * @detail use continuous memory access to speed up the cross multiplication
+     * @return the result of cross product of two matrix
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator*(const Matrix<T> &that) {
         if (this->column_size_ != that.row_size_ || this->row_size_ != that.column_size_) {
@@ -506,6 +590,12 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param k
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator*(const T &k) {
         Matrix<T> result(this->row_size_, this->column_size_);
@@ -516,12 +606,24 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator*=(const Matrix<T> &that) {
         (*this) = (*this) * that;
         return (*this);
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param k
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator*=(const T &k) {
         uint64_t n = this->row_size_ * this->column_size_;
@@ -532,16 +634,22 @@ namespace simple_matrix {
     }
 
     /**
-     * TODO after implement inverse
+     * @brief Division between matrix, A / B is calculated as A * B.inverse
      * @tparam T
      * @param that
      * @return
      */
     template<typename T>
     Matrix<T> Matrix<T>::operator/(const Matrix<T> &that) {
-        return Matrix<T>(0, 0);
+        return (*this) * that.inverse();
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param k
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::operator/(const T &k) {
         Matrix<T> result(this->row_size_, this->column_size_);
@@ -552,12 +660,24 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator/=(const Matrix<T> &that) {
         (*this) = (*this) / that;
         return (*this);
     }
 
+    /**
+     * @brief operator overload
+     * @tparam T
+     * @param that
+     * @return
+     */
     template<typename T>
     Matrix<T> &Matrix<T>::operator/=(const T &k) {
         uint64_t n = this->row_size_ * this->column_size_;
@@ -567,6 +687,12 @@ namespace simple_matrix {
         return (*this);
     }
 
+    /**
+     * @brief Implement the convolution of the matrix, supported by the operator overloads
+     * @tparam T
+     * @param that
+     * @return the result matrix
+     */
     template<typename T>
     Matrix<T> Matrix<T>::convolution(Matrix<T> &that) {
         uint64_t new_row_size = this->row_size_ + that.row_size_ - 1;
@@ -598,6 +724,14 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief Implement the innerProduct of the matrix
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto InnerProduct(Matrix<T1> a, Matrix<T2> b) {
         using T3 = decltype(std::declval<T1>() * std::declval<T2>());
@@ -616,6 +750,15 @@ namespace simple_matrix {
         return innerProduct;
     }
 
+    /**
+     * @brief the sub-matrix specified by the index
+     * @tparam T
+     * @param row_lo
+     * @param col_lo
+     * @param row_hi
+     * @param col_hi
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::subMatrix(uint64_t row_lo, uint64_t col_lo, uint64_t row_hi, uint64_t col_hi) {
         uint64_t new_row_size = row_hi - row_lo + 1;
@@ -629,6 +772,11 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief Get a matrix which is the result of 180-rotation of this matrix
+     * @tparam T
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::getRotate180() {
         Matrix<T> res(row_size_, column_size_);
@@ -639,6 +787,15 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief Find the min element, in the matrix (or rows or columns or sub-matrix, you
+     * can specify the index by a vector)
+     * @tparam T
+     * @param index : the vector that specify the index
+     * @param selectAs
+     * @param compare
+     * @return
+     */
     template<typename T>
     T Matrix<T>::FindMin(std::vector<int32_t> index, SelectAs selectAs,
                          std::function<bool(const T &, const T &)> compare) {
@@ -681,6 +838,15 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief Find the max element, in the matrix (or rows or columns or sub-matrix, you
+     * can specify the index by a vector)
+     * @tparam T
+     * @param index : the vector that specify the index
+     * @param selectAs
+     * @param compare
+     * @return
+     */
     template<typename T>
     T Matrix<T>::FindMax(std::vector<int32_t> index, SelectAs selectAs,
                          std::function<bool(const T &, const T &)> compare) {
@@ -723,6 +889,15 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief Sum the min element, in the matrix (or rows or columns or sub-matrix, you
+     * can specify the index by a vector)
+     * @tparam T
+     * @param index : the vector that specify the index
+     * @param selectAs
+     * @param compare
+     * @return
+     */
     template<typename T>
     T Matrix<T>::Sum(std::vector<int32_t> index, SelectAs selectAs) {
         T res;
@@ -764,12 +939,29 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief Find the average, in the matrix (or rows or columns or sub-matrix, you
+     * can specify the index by a vector)
+     * @tparam T
+     * @param index : the vector that specify the index
+     * @param selectAs
+     * @param compare
+     * @return
+     */
     template<typename T>
     T Matrix<T>::Average(std::vector<int32_t> index, SelectAs selectAs) {
         return (Sum(index, selectAs) / (row_size_ * column_size_));
     }
 
-
+    /**
+     * @brief operator overload, extra support added if two types can be operated.
+     * For example, if T1 + T2 is valid, then Matrix<T1> + Matrix<T2> is valid
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto operator+(Matrix<T1> &a, Matrix<T2> &b) {
         using T3 = decltype(std::declval<T1>() + std::declval<T2>());
@@ -790,6 +982,14 @@ namespace simple_matrix {
         return c;
     }
 
+    /**
+     * @brief operator overload, extra support added if two types can be operated.
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto operator-(Matrix<T1> &a, Matrix<T2> &b) {
         using T3 = decltype(std::declval<T1>() - std::declval<T2>());
@@ -810,6 +1010,14 @@ namespace simple_matrix {
         return c;
     }
 
+    /**
+     * @brief operator overload, extra support added if two types can be operated.
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto operator*(Matrix<T1> &a, Matrix<T2> &b) {
         using T3 = decltype(std::declval<T1>() * std::declval<T2>());
@@ -833,6 +1041,14 @@ namespace simple_matrix {
         return c;
     }
 
+    /**
+     * @brief Implement the dot multiplication
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto DotMultiply(Matrix<T1> &a, Matrix<T2> &b) {
         using T3 = decltype(std::declval<T1>() * std::declval<T2>());
@@ -853,6 +1069,14 @@ namespace simple_matrix {
         return c;
     }
 
+    /**
+     * @brief operator overload, extra support added if two types can be operated.
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto operator*(Matrix<T1> &a, std::vector<T2> &b) {
         using T3 = decltype(std::declval<T1>() * std::declval<T2>());
@@ -870,6 +1094,14 @@ namespace simple_matrix {
         return c;
     }
 
+    /**
+     * @brief operator overload, extra support added if two types can be operated.
+     * @tparam T1
+     * @tparam T2
+     * @param a
+     * @param b
+     * @return
+     */
     template<typename T1, typename T2>
     [[nodiscard]] auto operator/(Matrix<T1> &a, const T2 &b) {
         using T3 = decltype(std::declval<T1>() * std::declval<T2>());
@@ -884,8 +1116,7 @@ namespace simple_matrix {
     }
 
     /**
-     * @deprecated Never use this and just take it
-     * as a function for testing
+     * @warning It is very slow to print the matrix to the output
      * @tparam T
      * @param ostream
      * @param matrix
@@ -903,32 +1134,10 @@ namespace simple_matrix {
     }
 
     /**
-    * @protected by Matrix, you should only use this when
-    * you want to initialize the data of matrix IN YOUR DERIVED
-    * CLASS and have to set size for initializing matrix
-    *
-    * @tparam T
-    * @param rowSize
-    */
-    template<typename T>
-    void Matrix<T>::setRowSize(local_uint_t rowSize) {
-        row_size_ = rowSize;
-    }
-
-    /**
-     * @protected by Matrix, you should only use this when
-     * you want to initialize the data of matrix IN YOUR DERIVED
-     * CLASS and have to set size for initializing matrix
-     *
+     * Implement the transpose of a Matrix
      * @tparam T
-     * @param columnSize
+     * @return
      */
-    template<typename T>
-    void Matrix<T>::setColumnSize(local_uint_t columnSize) {
-        column_size_ = columnSize;
-    }
-
-
     template<typename T>
     Matrix<T> Matrix<T>::transpose() {
         Matrix<T> res(this->column_size_, this->row_size_);
@@ -940,6 +1149,13 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @static get a identity Matrix of given size
+     * @tparam T
+     * @param s
+     * @param t
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::identity(uint64_t s, T t) {
         Matrix<T> res(s, s);
@@ -949,6 +1165,13 @@ namespace simple_matrix {
         return res;
     }
 
+    /**
+     * @brief
+     * @tparam T
+     * @param col
+     * @param ele
+     * @return
+     */
     template<typename T>
     Matrix<double> Matrix<T>::Householder(uint64_t col, uint64_t ele) {
         double square = 0;
@@ -969,6 +1192,13 @@ namespace simple_matrix {
         return Matrix<double>::identity(this->row_size_, 1) - U * U.transpose() / modulus;
     }
 
+    /**
+     * @brief
+     * @tparam T
+     * @param col
+     * @param ele
+     * @return
+     */
     template<typename T>
     Matrix<double> Matrix<T>::Hessenberg() {
         if (this->column_size_ != this->row_size_) {
@@ -987,6 +1217,14 @@ namespace simple_matrix {
         return H;
     }
 
+    /**
+     *
+     * @tparam T
+     * @param col
+     * @param begin
+     * @param end
+     * @return
+     */
     template<typename T>
     Matrix<double> Matrix<T>::Givens(uint64_t col, uint64_t begin, uint64_t end) {
         Matrix<double> R = Matrix<double>::identity(this->row_size_, 1);
@@ -1004,6 +1242,11 @@ namespace simple_matrix {
         return R;
     }
 
+    /**
+     * @brief QR iteration implemented
+     * @tparam T
+     * @return
+     */
     template<typename T>
     Matrix<double> Matrix<T>::QR_iteration() {
         Matrix<double> R = this->Hessenberg();
@@ -1016,6 +1259,11 @@ namespace simple_matrix {
         return R * Q;
     }
 
+    /**
+     * @brief get eigen value implemented
+     * @tparam T
+     * @return
+     */
     template<typename T>
     std::vector<double> Matrix<T>::eigenvalue() {
         if (this->column_size_ != this->row_size_) {
@@ -1033,6 +1281,11 @@ namespace simple_matrix {
         return eigenvalues;
     }
 
+    /**
+     * @brief Inverse of Matrix
+     * @tparam T
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::inverse() {
         if ((this->column_size_ != this->row_size_) && this->determinant() == 0) {
@@ -1066,6 +1319,11 @@ namespace simple_matrix {
         return ans;
     }
 
+    /**
+     * @brief trace of Matrix
+     * @tparam T
+     * @return
+     */
     template<typename T>
     T Matrix<T>::trace() {
         T ans{0};
@@ -1078,6 +1336,11 @@ namespace simple_matrix {
         return ans;
     }
 
+    /**
+     * @brief determinant of Matrix
+     * @tparam T
+     * @return
+     */
     template<typename T>
     T Matrix<T>::determinant() {
         if (this->column_size_ != this->row_size_) {
@@ -1100,6 +1363,13 @@ namespace simple_matrix {
         return ans;
     }
 
+    /**
+     * @brief reshape the Matrix of the given size
+     * @tparam T
+     * @param row
+     * @param col
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::reshape(int32_t row, int32_t col) {
         int32_t col_num = this->column_size_;
@@ -1115,6 +1385,15 @@ namespace simple_matrix {
         return Matrix<T>(std::move(res));
     }
 
+    /**
+     * @brief slice the Matrix into a smaller one
+     * @tparam T
+     * @param row1
+     * @param row2
+     * @param col1
+     * @param col2
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::slice(int32_t row1, int32_t row2, int32_t col1, int32_t col2) {
         if (row1 < 0 || row2 >= this->row_size_ || col1 < 0 || col2 >= this->column_size_ || row1 > row2 ||
@@ -1130,6 +1409,12 @@ namespace simple_matrix {
         return Matrix<T>(std::move(res));
     }
 
+    /**
+     * @brief get the conjugate of Matrix
+     * @tparam T
+     * @param conjugate
+     * @return
+     */
     template<typename T>
     Matrix<T> Matrix<T>::Conjugate(std::function<T(const T &)> conjugate) {
         auto result = Matrix<T>(row_size_, column_size_);
@@ -1140,6 +1425,11 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief Convert cv::Mat to Matrix
+     * @param mat
+     * @return
+     */
     Matrix<double> CvMatToMatrix(const cv::Mat &mat) {
         int32_t type = mat.type();
         if (mat.channels() > 1) {
@@ -1158,6 +1448,12 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * @brief Convert Matrix to cv::Mat
+     * @tparam T
+     * @param matrix
+     * @return
+     */
     template<typename T>
     cv::Mat MatrixToCvMat(const Matrix<T> &matrix) {
         using std::is_same_v;
@@ -1202,6 +1498,11 @@ namespace simple_matrix {
 
     }
 
+    /**
+     * @brief Implement the eigen vector by using the eigen library
+     * @tparam T
+     * @return
+     */
     template<typename T>
     std::vector<std::pair<T, std::vector<T>>> Matrix<T>::eigen() {
         auto mat = (cv::Mat_<T>)(*this);
@@ -1221,6 +1522,11 @@ namespace simple_matrix {
         return result;
     }
 
+    /**
+     * Cast operator overload (from Matrix to cv::Mat_ )
+     * @tparam T
+     * @return
+     */
     template<typename T>
     Matrix<T>::operator cv::Mat_<T>() {
         cv::Mat_<T> mat(row_size_, column_size_);
