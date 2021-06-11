@@ -36,6 +36,9 @@
 #include <iterator>
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <Eigen/Dense>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/core/eigen.hpp>
 #include <iostream>
 #include <functional>
 #include <cmath>
@@ -175,6 +178,8 @@ namespace simple_matrix {
         [[nodiscard]] Matrix<T> inverse();
 
 //        [[nodiscard]] Matrix<double> eigenvector() const;
+        std::vector<std::pair<T, std::vector<T>>> eigen();
+
         [[nodiscard]] T trace();
 
         [[nodiscard]] T determinant();
@@ -1193,6 +1198,25 @@ namespace simple_matrix {
             return mat;
         }
 
+    }
+
+    template<typename T>
+    std::vector<std::pair<T, std::vector<T>>> Matrix<T>::eigen() {
+        auto mat = (cv::Mat_<T>)(*this);
+        cv::Mat_<T> valuesMat;
+        cv::Mat_<T> vectorsMat;
+
+        cv::eigen(mat, valuesMat, vectorsMat);
+
+        std::vector<std::pair<T, std::vector<T>>> result;
+        for (int i = 0; i < valuesMat.rows; ++i) {
+            std::vector<T> vec;
+            for (int j = 0; j < vectorsMat.cols; ++j) {
+                vec.push_back(vectorsMat[i][0]);
+            }
+            result.push_back(std::make_pair(valuesMat[i][0], vec));
+        }
+        return result;
     }
 }
 
