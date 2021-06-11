@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <complex>
-#include "simple_matrix.h"
+#include "../src/simple_matrix.h"
 
 using namespace simple_matrix;
 

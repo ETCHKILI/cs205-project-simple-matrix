@@ -20,7 +20,7 @@ ENDIF()
 add_executable(cs205_project_simple_matrix
 
         src/simple_matrix.h
-        src/test1.cpp
+        test/test1.cpp
         src/simple_matrix_exception.h
         src/simple_matrix_exception.cpp
         )
