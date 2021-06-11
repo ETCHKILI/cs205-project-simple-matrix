@@ -3,9 +3,9 @@ project(cs205_project_simple_matrix)
 
 set(CMAKE_CXX_STANDARD 17)
 
-
-
 set(OpenCV_DIR "E:/Environment/opencv")
+
+include_directories("E:\\Environment\\eigen3")
 
 find_package(OpenCV REQUIRED)
 IF(OPENCV_FOUND)
