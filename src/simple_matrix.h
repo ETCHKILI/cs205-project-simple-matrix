@@ -93,6 +93,8 @@ namespace simple_matrix {
 
         explicit Matrix(const std::vector<T> &v, SelectAs selectAs);
 
+        explicit operator cv::Mat_<T>();
+
         Matrix(const Matrix<T> &that);
 
         Matrix(Matrix<T> &&that) noexcept;
@@ -1217,6 +1219,18 @@ namespace simple_matrix {
             result.push_back(std::make_pair(valuesMat[i][0], vec));
         }
         return result;
+    }
+
+    template<typename T>
+    Matrix<T>::operator cv::Mat_<T>() {
+        cv::Mat_<T> mat(row_size_, column_size_);
+#pragma omp parallel for collapse(2)
+        for (int row = 0; row < row_size_; ++row) {
+            for (int col = 0; col < column_size_; ++col) {
+                mat(row, col) = data_[row * column_size_ + col];
+            }
+        }
+        return mat;
     }
 }
 
